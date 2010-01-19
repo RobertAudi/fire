@@ -1,0 +1,28 @@
+# fire : CodeIgniter Controller and Model generator
+This little script lets you generate controllers and models very easily in your codeigniter-based app.
+
+The first thing you have to do is move the *fire* script to a folder of your choice. For the sake of the exemple, I will put it in *~/bin*. You then have to add *~/bin* to your PATH. In Unix-based systems, add the following line to *.bashrc*, *.bash_profile*, *.zshrc* or the like: (In OS X)
+
+    PATH=Users/aziz/bin:$PATH
+
+Obviously you would have to replace aziz by your user name. Also, make sure that *fire* is executable. On Unix-based systems (from the command line):
+
+    chmod a+x fire
+
+It works out of the box, all you have to do is navigation to the application folder via the command line and use the fire command. Some examples:
+
+--------------------
+    fire controller posts
+This command will create a posts controller in the controllers folder.
+
+--------------------
+    fire controller
+This will also create a controller, however the user will be asked to enter a name.
+
+--------------------
+    fire model post
+This command will create a post model in the models folder.
+
+--------------------
+    fire model
+This will also create a model, however the user will be asked to enter a name.

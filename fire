@@ -1,0 +1,291 @@
+#!/usr/bin/php -q
+<?php
+
+/**
+ * A CodeIgniter CLI too to easily create models, controllers and views
+ *
+ * @package Fire
+ * @author Aziz Light
+ * @copyright Copyright (c) 2009, Aziz Light
+ * @license http://www.opensource.org/licenses/mit-license.php MIT License
+ */
+class Fire
+{
+	/**
+	 * The name of the application folder. 
+	 * Change that constant only if you changed the name of the application folder.
+	 */
+	const application_folder_name = 'application';
+	
+	/**
+	 * Parent controller that will extend every other controller
+	 */
+	const parent_controller = 'Controller';
+	
+	/**
+	 * The name of the constructor of the parent Controller.
+	 * Can be __construct or Controller for instance.
+	 */
+	const parent_controller_constructor = 'Controller';
+	
+	/**
+	 * Parent model that will extend every other model
+	 */
+	const parent_model = 'Model';
+	
+	const parent_model_constructor = 'Model';
+	
+	/**
+	 * Model suffix
+	 */
+	const model_suffix = '_model';
+	
+// ------------------------------------------------------------------------
+	
+	/**
+	 * The type of element you want to create. ie: 'controller', 'model', 'view'.
+	 * It can also be 'help'.
+	 *
+	 * @var string
+	 */
+	public $type;
+	
+	/**
+	 * The name of the the element you want to create
+	 * or the name of the help section you want to display.
+	 *
+	 * @var string
+	 */
+	public $name;
+	
+	/**
+	 * If there is an error during the execution of the script
+	 * it will be stored in this variable
+	 *
+	 * @var string
+	 */
+	private $_error;
+	
+// ------------------------------------------------------------------------
+	
+	function __construct($type, $name)
+	{
+		$this->_init($type, $name);
+	}
+	
+// ------------------------------------------------------------------------
+	
+	/**
+	 * Controller template
+	 *
+	 * @access public
+	 * @param string $name : The name of the controller. Should be plural.
+	 * @return void
+	 * @author Aziz Light
+	 */
+	public function controller()
+	{
+		$controller  = "<?php if (!defined('BASEPATH')) exit('No direct script access allowed');\n\n";
+		$controller .= "class " . ucfirst($this->name) . " extends " . self::parent_controller . "\n";
+		$controller .= "{\n";
+		
+			$controller .= "\t/**\n";
+			$controller .= "\t * The Constructor!\n";
+			$controller .= "\t **/\n";
+			$controller .= "\tpublic function __construct()\n";
+			$controller .= "\t{\n";
+				$controller .= "\t\tparent::" . self::parent_controller_constructor . "();\n";
+			$controller .= "\t}\n";
+		
+			$controller .= "\t\n\n";
+		
+			$controller .= "\tpublic function index()\n";
+			$controller .= "\t{\n";
+				$controller .= "\t\t\n";
+			$controller .= "\t} // End of index\n";
+			$controller .= "\t\n";
+		
+			$controller .= "\t\n\n";
+		
+		$controller .= "} // End of the " . ucfirst($this->name) . " controller\n\n";
+		$controller .= "/* End of file " . $this->name . ".php */\n";
+		$controller .= "/* Location ./application/controllers/" . $this->name . ".php */";
+		
+		return $controller;
+	} // End of controller
+	
+// ------------------------------------------------------------------------
+	
+	/**
+	 * Model Template
+	 *
+	 * @param string $name : The name of the model without the suffix. Should be singular.
+	 * @return void
+	 * @author Aziz Light
+	 */
+	public function model()
+	{
+		$model  = "<?php if (!defined('BASEPATH')) exit('No direct script access allowed');\n\n";
+		$model .= "class " . ucfirst($this->name) . "_model extends " . self::parent_model . "\n";
+		$model .= "{\n";
+			$model .= "\t/**\n";
+			$model .= "\t * The Constructor!\n";
+			$model .= "\t **/\n";
+			$model .= "\tpublic function __construct()\n";
+			$model .= "\t{\n";
+				$model .= "\t\tparent::" . self::parent_model_constructor . "();\n";
+			$model .= "\t}\n";
+		
+			$model .= "\t\n\n";
+		
+			$model .= "\t\n\n";
+		
+		$model .= "} // End of the " . ucfirst($this->name) . " model\n\n";
+		$model .= "/* End of file " . $this->name . self::model_suffix . ".php */\n";
+		$model .= "/* Location ./application/models/" . $this->name . self::model_suffix . ".php */";
+		
+		return $model;
+	} // End of model
+	
+// ------------------------------------------------------------------------
+	
+	
+	public function create()
+	{
+		if (empty($this->name))
+			$this->name = $this->_get_name();
+		
+		$type = (string)$this->type;
+		$config['type']     = $type;
+		$config['filename'] = $this->name;
+		$config['template'] = $this->$type();
+		
+		
+		switch ($this->type)
+		{
+			case 'controller':
+				$this->_make($config);
+				break;
+			case 'model':
+				$config['filename'] = $config['filename'] . self::model_suffix;
+				$this->_make($config);
+				break;
+			case 'help':
+				
+				break;
+			default:
+				$this->_error = "You specified an unknown type!!";
+				$this->help();
+				break;
+		}
+	} // End of create
+	
+// ------------------------------------------------------------------------
+	
+	/**
+	 * Display some help
+	 *
+	 * @return string
+	 * @author Aziz Light
+	 */
+	public function help()
+	{
+		if (!empty($this->_error))
+			$this->_display_error();
+		
+	} // End of help
+	
+// ------------------------------------------------------------------------
+// Private Methods
+// ------------------------------------------------------------------------
+	
+	
+	private function _init($type, $name)
+	{
+		if ($this->_check_location() === FALSE)
+			exit('You are not in the ' . self::application_folder_name . ' folder!!!\n');
+		
+		if (empty($type))
+			exit("You specified an unknown type!!\n");
+		
+		$this->type = $type;
+		$this->name = (isset($name)) ? $name : '';
+		$this->_error = '';
+		return;
+	} // End of _init
+	
+// ------------------------------------------------------------------------
+	
+	/**
+	 * Check that the user is in the application folder
+	 *
+	 * @access private
+	 * @return bool
+	 * @author Aziz Light
+	 */
+	private function _check_location()
+	{
+		$location = getcwd();
+		$location = explode('/', $location);
+		$location = $location[count($location) - 1];
+		
+		if ((string)$location !== self::application_folder_name)
+			return FALSE;
+		return TRUE;
+	} // End of _check_location
+	
+// ------------------------------------------------------------------------
+	
+	
+	private function _get_name()
+	{
+		echo 'Please enter the name of the ' . $this->type . ':';
+		return fgets(STDIN);
+	} // End of _get_name
+	
+// ------------------------------------------------------------------------
+	
+	
+	private function _make($config)
+	{
+		$file = './' . $config['type'] . 's/' . $config['filename'] . '.php';
+		if (file_put_contents($file, $config['template']) === FALSE)
+		{
+			$this->_error = 'Unable to create the ' . ucfirst($config['filename']) . ' ' . $config['type'] . '...';
+			$this->help();
+			exit();
+		}
+		else
+		{
+			return TRUE;
+		}
+	} // End of _make
+	
+// ------------------------------------------------------------------------
+	
+	/**
+	 * If there is an error, display it and empty the instance variable
+	 *
+	 * @access private
+	 * @return void
+	 * @author Aziz Light
+	 */
+	private function _display_error()
+	{
+		$error  = "\n\n\t";
+		$error .= $this->_error;
+		$error .= "\n\n";
+		
+		echo $error;
+		unset($error);
+		$this->_error = '';
+		return;
+	} // End of _display_error
+	
+} // End of CiCLI
+
+// ------------------------------------------------------------------------
+// ------------------------------------------------------------------------
+
+$fire = new Fire($argv[1], $argv[2]);
+$fire->create();
