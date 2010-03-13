@@ -182,7 +182,7 @@ class Fire
 		if (empty($message))
 		{
 			$type = 'error';
-			$message = __CLASS__ . '::_display_message() : You tried to display a message but didn\'t provide the message...';
+			$message = 'You tried to display a message but didn\'t provide the message...';
 		}
 		
 		$_message_type = array(
