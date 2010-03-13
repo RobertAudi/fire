@@ -76,3 +76,7 @@ This command will create two controller and a model:
 * New feature: Add public/private actions/methods to new controllers/models.
 * Updated: Better notification system.
 * Soon: Create new CodeIgniter projects.
+
+### 03/13/2010
+* New feature: Create new CodeIgniter projects (Work in progress - Additional features coming soon).
+* Updated: Removed all the references to the source of the errors/warning in the message outputs that use user sees.
