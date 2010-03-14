@@ -311,7 +311,14 @@ class Ci extends Fire
 				$destination .= '/';
 		}
 		
-		if (empty($name))
+		if (!empty($name) && is_dir($destination . $name))
+		{
+			$_notice = 'There is already a project named ' . $name . ' in this directory! Try Again.';
+			self::_display_message('notice', $_notice);
+			unset($_notice);
+			$name = $this->_get_name($destination);
+		}
+		elseif (empty($name))
 			$name = $this->_get_name($destination);
 		$destination .= $name;
 		
@@ -494,53 +501,42 @@ class Ci extends Fire
 	{
 		echo 'Choose a name for your project: ';
 		$name = trim(fgets(STDIN));
-		if (empty($name))
+		
+		$i = 0;
+		$state = '';
+		do
 		{
-			$_notice = 'You need to specify a name for your project! Try again.';
-			self::_display_message('notice', $_notice);
-			unset($_notice);
-			
-			$i = 0;
-			$state = '';
-			do
+			if (empty($name))
 			{
-				echo 'Choose a ' . $state . ' name for your project: ';
-				$name = trim(fgets(STDIN));
-				
-				if (empty($name))
-				{
-					$_notice = 'You need to specify a name for your project! Try again.';
-					self::_display_message('notice', $_notice);
-					unset($_notice);
-					$i++;
-					continue;
-				}
-				elseif (is_dir($destination . $name))
-				{
-					$_notice = 'There is already a project named ' . $name . ' in this directory! Try Again.';
-					self::_display_message('notice', $_notice);
-					unset($_notice);
-					$name = '';
-					$state = 'new';
-					$i++;
-					continue;
-				}
-				else
-				{
-					$i = 42;
-					break;
-				}
-				
-			} while ($i < 3);
-			
-			if ($i < 42)
+				$_notice = 'You need to specify a name for your project! Try again.';
+				self::_display_message('notice', $_notice);
+				unset($_notice);
+			}
+			elseif (is_dir($destination . $name))
 			{
-				$_error = 'You didn\'t specify a name for the new project you are trying to create!';
-				self::_display_message('error', $_error);
+				$_notice = 'There is already a project named ' . $name . ' in this directory! Try Again.';
+				self::_display_message('notice', $_notice);
+				unset($_notice);
+				$name = '';
+				$state = 'new';
+			}
+			else
+			{
+				$i = 42;
+				break;
 			}
 			
-			return $name;
+			echo 'Choose a ' . $state . ' name for your project: ';
+			$name = trim(fgets(STDIN));
+			$i++;
+		} while ($i < 3);
+		
+		if ($i < 42)
+		{
+			$_error = 'You didn\'t specify a name for the new project you are trying to create!';
+			self::_display_message('error', $_error);
 		}
+		return $name;
 	} // End of _get_name
 	
 // ------------------------------------------------------------------------
@@ -631,8 +627,8 @@ class Ci extends Fire
 	{
 		if (substr($project_path, - 1) != '/')
 			$project_path .= '/';
-		
-		return (@rename($project_path . 'system/' . self::application_folder_name, $project_path . self::application_folder_name));
+		// @
+		return (rename($project_path . 'system/' . self::application_folder_name, $project_path . self::application_folder_name));
 	} // End of _move_application_folder
 	
 // ------------------------------------------------------------------------
@@ -649,19 +645,22 @@ class Ci extends Fire
 	 */
 	private function _create_assets_folders($project_path)
 	{
-		if (substr($destination, - 1) != '/')
-			$destination .= '/';
+		if (substr($project_path, - 1) != '/')
+			$project_path .= '/';
 		
-		if (!@mkdir($destination . self::name_of_assets_folder, 0755))
+		// @
+		if (!mkdir($project_path . self::name_of_assets_folder, 0755))
 		{
 			return FALSE;
 		}
 		
 		foreach ($this->_assets_subfolders as $asset)
 		{
-			if (!@mkdir($destination . self::name_of_assets_folder . '/' . $asset, 0755))
+			// @
+			if (!mkdir($project_path . self::name_of_assets_folder . '/' . $asset, 0755))
 			{
-				if (!$this->_remove_assets_folder($destination))
+				// if (!$this->_remove_assets_folder($project_path))
+				if (!$this->_recursive_remove_directory($project_path))
 				{
 					$_error = 'Unable to remove the assets folder...';
 					self::_display_message('error', $_error, TRUE);
@@ -714,6 +713,58 @@ class Ci extends Fire
 			return TRUE;
 		}
 	} // End of _remove_assets_folder
+	
+// ------------------------------------------------------------------------
+	
+	/**
+	 * Remove a folder and all of its contents.
+	 *
+	 * @access private
+	 * @param string $directory : the path to the folder to remove.
+	 * @param bool $empty : If TRUE, the directory and subdirectories will be emptied but not removed.
+	 * @return bool
+	 * @author lixlpixel
+	 * @link http://lixlpixel.org/recursive_function/php/recursive_directory_delete/
+	 */
+	private function _recursive_remove_directory($directory, $empty = FALSE)
+	{
+		if (substr($directory, -1) == '/')
+		{
+			$directory = substr($directory, 0, -1);
+		}
+		if (!file_exists($directory) || !is_dir($directory))
+		{
+			return FALSE;
+		}
+		elseif (is_readable($directory))
+		{
+			$handle = opendir($directory);
+			while (FALSE !== ($item = readdir($handle)))
+			{
+				if ($item != '.' && $item != '..')
+				{
+					$path = $directory . '/' . $item;
+					if (is_dir($path))
+					{
+						$this->_recursive_remove_directory($path);
+					}
+					else
+					{
+						unlink($path);
+					}
+				}
+			}
+			closedir($handle);
+			if ($empty == FALSE)
+			{
+				if (!rmdir($directory))
+				{
+					return FALSE;
+				}
+			}
+		}
+		return TRUE;
+	} // End of _recursive_remove_directory
 	
 } // End of Ci class
 
