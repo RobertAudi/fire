@@ -3,6 +3,7 @@
 
 /**
 * Master class. Shows the help, contains all the configuration constants and all the static methods.
+* 
 * @package Fire
 * @author Aziz Light
 * @link http://github.com/AzizLight/fire
@@ -97,7 +98,11 @@ class Fire
 	 * @access private
 	 * @var array
 	 */
-	private $_assets_subfolders;
+	private $_assets_subfolders = array(
+		'cs',
+		'js',
+		'images',
+	);
 	
 	/**
 	 * The list of valid parameters that will tell fire
@@ -143,7 +148,7 @@ class Fire
 		for ($i = 1; $i < $max; $i++)
 		{
 			if (in_array($args[$i - 1], self::$_valid_cli_params) && in_array($args[$i], self::$_valid_cli_params))
-				throw new Exception(__CLASS__ . '::validate() : Duplicate keywords detected!');
+				throw new Exception('Duplicate keywords detected!');
 		}
 		
 		return TRUE;
@@ -177,7 +182,7 @@ class Fire
 	 * @return void
 	 * @author Aziz Light
 	 */
-	protected static function _display_message($type = '', $message = '')
+	protected static function _display_message($type = '', $message = '', $continue = FALSE)
 	{
 		if (empty($message))
 		{
@@ -202,7 +207,7 @@ class Fire
 		echo $_message;
 		unset($_label, $_message, $message);
 		
-		if ($type == 'error')
+		if ($type == 'error' && $continue === FALSE)
 			exit();
 		else
 			return;
@@ -226,6 +231,25 @@ class Fire
 class Ci extends Fire
 {
 	/**
+	 * Instance variable that exists for the sole purpose of passing the name
+	 * of the created project to the message that the destructor will display
+	 * if a project was successfully created.
+	 *
+	 * @var string
+	 */
+	private $_name;
+	
+	/**
+	 * The destructor method will not display a success message unless this variable is true;
+	 *
+	 * @access private
+	 * @var string
+	 */
+	private $_success;
+	
+// ------------------------------------------------------------------------
+	
+	/**
 	 * The Constructor!
 	 *
 	 * @access public
@@ -233,8 +257,9 @@ class Ci extends Fire
 	 */
 	public function __construct()
 	{
-		// if (!$this->_init())
-		// 	exit();
+		parent::__construct();
+		
+		$this->_success = FALSE;
 		
 		$this->_assets_subfolders = array(
 			'css', 'js', 'images',
@@ -243,6 +268,35 @@ class Ci extends Fire
 	
 // ------------------------------------------------------------------------
 	
+	/**
+	 * El Destructor!
+	 *
+	 * @access public
+	 * @return void
+	 * @author Aziz Light
+	 */
+	public function __destruct()
+	{
+		if ($this->_success === TRUE)
+		{
+			$_message = ucfirst($this->_name) . ' project successfully created!';
+			self::_display_message('', $_message);
+			unset($_message);
+		}
+	} // End of __destruct
+	
+// ------------------------------------------------------------------------
+	
+	/**
+	 * Create a new project. Optionally, moves the application folder out of
+	 * the system folder and creates the assets folder.
+	 *
+	 * @access public
+	 * @param string $name : The name of the new project.
+	 * @param string $destination : Optional. The destination of the new project. If not provided, will be set automatically to the current location.
+	 * @return void
+	 * @author Aziz Light
+	 */
 	public function create_project($name = '', $destination = '')
 	{
 		$name = trim($name);
@@ -256,73 +310,31 @@ class Ci extends Fire
 			if (substr($destination, - 1) != '/')
 				$destination .= '/';
 		}
-		$destination .= $name;
 		
 		if (empty($name))
-		{
-			echo 'Choose a name for your project: ';
-			$name = trim(fgets(STDIN));
-			if (empty($name))
-			{
-				$_notice = 'You need to specify a name for your project! Try again.';
-				self::_display_message('notice', $_notice);
-				unset($_notice);
-				
-				$i = 0;
-				$state = '';
-				do
-				{
-					echo 'Choose a ' . $state . ' name for your project: ';
-					$name = trim(fgets(STDIN));
-					
-					if (empty($name))
-					{
-						$_notice = 'You need to specify a name for your project! Try again.';
-						self::_display_message('notice', $_notice);
-						unset($_notice);
-						$i++;
-						continue;
-					}
-					elseif (!$this->_check_folder($destination)) // FIXME - where the fuck is the _check_folder method ?!?
-					{
-						$_notice = 'There is already a project named ' . $name . ' in this directory! Try Again.';
-						self::_display_message('notice', $_notice);
-						unset($_notice);
-						$state = 'new';
-						$i++;
-						continue;
-					}
-					else
-					{
-						$i = 42;
-						break;
-					}
-					
-				} while ($i < 3);
-				
-				if ($i < 42)
-				{
-					$_error = 'You didn\'t specify a name for the new project you are trying to create!';
-					self::_display_message('error', $_error);
-					exit();
-				}
-			}
-		}
+			$name = $this->_get_name($destination);
+		$destination .= $name;
 		
 		if ($this->_import_ci($destination))
 		{
+			// -Verbose-mode-----------------------------------------------------------
 			if (self::verbose_mode)
 			{
-				// -Move the application folder--------------------------------------------
-				$_question  = 'Do you want to move the application folder outside of the system folder? [Default: ';
-				$_question .= (self::move_application_folder) ? 'yes' : 'no';
-				$_question .= ']';
+				// -Move-the-application folder--------------------------------------------
+				$_default_answer = (self::move_application_folder) ? 'yes' : 'no';
+				$_question  = 'Do you want to move the application folder outside of the system folder? [Default: ' . $_default_answer . ']';
 				echo $_question;
 				
 				$_answer = strtolower(trim(fgets(STDIN)));
-				if ($_answer == 'yes' || $_answer == 'y' || empty($_answer))
+				
+				if ($_answer == 'yes' || $_answer == 'y' || (empty($_answer) && $_default_answer == 'yes'))
 				{
-					// move the application folder out.
+					if (!$this->_move_application_folder($destination))
+					{
+						$_error = 'Unable to move the application folder...';
+						self::_display_message('error', $_error, TRUE);
+						unset($_error);
+					}
 				}
 				elseif ($_answer != 'no' || $_answer != 'n')
 				{
@@ -332,9 +344,14 @@ class Ci extends Fire
 						echo 'I do not understand...' . "\n";
 						echo $_question;
 						$_answer = strtolower(trim(fgets(STDIN)));
-						if ($_answer == 'yes' || $_answer == 'y' || empty($_answer))
+						if ($_answer == 'yes' || $_answer == 'y' || (empty($_answer) && $_default_answer == 'yes'))
 						{
-							// move the application folder out.
+							if (!$this->_move_application_folder($destination))
+							{
+								$_error = 'Unable to move the application folder...';
+								self::_display_message('error', $_error, TRUE);
+								unset($_error);
+							}
 							$i = 42;
 						}
 						elseif ($_answer == 'no' || $_answer == 'n')
@@ -349,26 +366,182 @@ class Ci extends Fire
 						$_warning = 'No understandable answer was provided to the previous question...The choice will be made for you...';
 						self::_display_message('warning', $_warning);
 						unset($_warning);
+						
+						if (self::move_application_folder == 'yes')
+						{
+							if (!$this->_move_application_folder($destination))
+							{
+								$_error = 'Unable to move the application folder...';
+								self::_display_message('error', $_error, TRUE);
+								unset($_error);
+							}
+						}
 					}
 				}
+				unset($_answer, $_question, $_default_answer);
 				// ------------------------------------------------------------------------
 				
-				// -Create assets folder---------------------------------------------------
-				// Create assets folder
+				// -Create-assets-folder---------------------------------------------------
+				$_default_answer = (self::create_assets_folder) ? 'yes' : 'no';
+				$_question  = 'Do you want to create an assets folder? [Default: ' . $_default_answer . '] ';
+				echo $_question;
+				
+				$_answer = strtolower(trim(fgets(STDIN)));
+				if ($_answer == 'yes' || $_answer = 'y' || (empty($_answer) && $_default_answer == 'yes'))
+				{
+					if (!$this->_create_assets_folders($destination))
+					{
+						$_error = 'Unable to create the assets folder...';
+						self::_display_message('error', $_error, TRUE);
+						unset($_error);
+					}
+				}
+				elseif ($_answer != 'no' || $_answer != 'n')
+				{
+					$i = 0;
+					do
+					{
+						echo 'I do not understand...' . "\n";
+						echo $_question;
+						$_answer = strtolower(trim(fgets(STDIN)));
+						if ($_answer == 'yes' || $_answer == 'y' || (empty($_answer) && $_default_answer == 'yes'))
+						{
+							if (!$this->_create_assets_folders($destination))
+							{
+								$_error = 'Unable to create the assets folder...';
+								self::_display_message('error', $_error, TRUE);
+								unset($_error);
+							}
+							$i = 42;
+						}
+						elseif ($_answer == 'no' || $_answer == 'n')
+						{
+							$i = 42;
+						}
+						$i++;
+					} while ($i < 3);
+					
+					if ($i < 42)
+					{
+						$_warning = 'No understandable answer was provided to the previous question...The choice will be made for you...';
+						self::_display_message('warning', $_warning);
+						unset($_warning);
+						
+						if (self::create_assets_folder == 'yes')
+						{
+							if (!$this->_create_assets_folders($destination))
+							{
+								$_error = 'Unable to create the assets folder...';
+								self::_display_message('error', $_error, TRUE);
+								unset($_error);
+							}
+						}
+					}
+				}
+				
+				unset($_answer, $_question, $_default_answer);
 				// ------------------------------------------------------------------------
-			}
+			} // End of Verbose mode
 			else
 			{
-				// Proceed with the default settings
+				// -Non-Verbose-Mode-------------------------------------------------------
+				if (self::move_application_folder == 'yes')
+				{
+					if (!$this->_move_application_folder($destination))
+					{
+						$_error = 'Unable to move the application folder...';
+						self::_display_message('error', $_error, TRUE);
+						unset($_error);
+					}
+				}
+				
+				if (self::create_assets_folder == 'yes')
+				{
+					if (!$this->_create_assets_folders($destination))
+					{
+						$_error = 'Unable to create the assets folder...';
+						self::_display_message('error', $_error, TRUE);
+						unset($_error);
+					}
+				}
 			}
+			
+			$this->_name    = $name;
+			$this->_success =  TRUE;
+			return;
 		}
 		else
 		{
 			$_error = 'Unable to create the CodeIgniter project...';
 			self::_display_message('error', $_error);
-			exit();
 		}
 	} // End of create_project
+	
+// ------------------------------------------------------------------------
+	
+	/**
+	 * Prompts the user to enter a name for the new project he is
+	 * trying to create.
+	 * This method will only be called if the user tried to
+	 * create a project and did not provide a name.
+	 *
+	 * @access public
+	 * @param string $destination : The destination of the new project. Used to check if a project with the same name already exists.
+	 * @return void|string : Returns the name or terminates the execution if no name was retrieved.
+	 * @author Aziz Light
+	 */
+	private function _get_name($destination)
+	{
+		echo 'Choose a name for your project: ';
+		$name = trim(fgets(STDIN));
+		if (empty($name))
+		{
+			$_notice = 'You need to specify a name for your project! Try again.';
+			self::_display_message('notice', $_notice);
+			unset($_notice);
+			
+			$i = 0;
+			$state = '';
+			do
+			{
+				echo 'Choose a ' . $state . ' name for your project: ';
+				$name = trim(fgets(STDIN));
+				
+				if (empty($name))
+				{
+					$_notice = 'You need to specify a name for your project! Try again.';
+					self::_display_message('notice', $_notice);
+					unset($_notice);
+					$i++;
+					continue;
+				}
+				elseif (is_dir($destination . $name))
+				{
+					$_notice = 'There is already a project named ' . $name . ' in this directory! Try Again.';
+					self::_display_message('notice', $_notice);
+					unset($_notice);
+					$name = '';
+					$state = 'new';
+					$i++;
+					continue;
+				}
+				else
+				{
+					$i = 42;
+					break;
+				}
+				
+			} while ($i < 3);
+			
+			if ($i < 42)
+			{
+				$_error = 'You didn\'t specify a name for the new project you are trying to create!';
+				self::_display_message('error', $_error);
+			}
+			
+			return $name;
+		}
+	} // End of _get_name
 	
 // ------------------------------------------------------------------------
 	
@@ -446,11 +619,101 @@ class Ci extends Fire
 	
 // ------------------------------------------------------------------------
 	
-	private function _move_application_folder()
+	/**
+	 * Move the application folder up one level (to the same level as the system folder).
+	 *
+	 * @access private
+	 * @param string $application_path : The path where the new project has been created.
+	 * @return bool
+	 * @author Aziz Light
+	 */
+	private function _move_application_folder($project_path)
 	{
-		if (!@rename(''))
-		{}
+		if (substr($project_path, - 1) != '/')
+			$project_path .= '/';
+		
+		return (@rename($project_path . 'system/' . self::application_folder_name, $project_path . self::application_folder_name));
 	} // End of _move_application_folder
+	
+// ------------------------------------------------------------------------
+	
+	/**
+	 * Create the assets folder and subfolders.
+	 * If the method fails to create one of the folders,
+	 * all the previously created folders will be deleted.
+	 *
+	 * @access private
+	 * @param string $project_path : The path where the new project has been created.
+	 * @return bool
+	 * @author Aziz Light
+	 */
+	private function _create_assets_folders($project_path)
+	{
+		if (substr($destination, - 1) != '/')
+			$destination .= '/';
+		
+		if (!@mkdir($destination . self::name_of_assets_folder, 0755))
+		{
+			return FALSE;
+		}
+		
+		foreach ($this->_assets_subfolders as $asset)
+		{
+			if (!@mkdir($destination . self::name_of_assets_folder . '/' . $asset, 0755))
+			{
+				if (!$this->_remove_assets_folder($destination))
+				{
+					$_error = 'Unable to remove the assets folder...';
+					self::_display_message('error', $_error, TRUE);
+					unset($_error);
+				}
+				return FALSE;
+			}
+		}
+		
+		return TRUE;
+	} // End of _create_assets_folders
+	
+// ------------------------------------------------------------------------
+	
+	/**
+	 * Remove the assets folder and all of its subfolders.
+	 *
+	 * @access private
+	 * @param string $directory : The directory where the new project was created.
+	 * @return bool
+	 * @author Aziz Light
+	 */
+	private function _remove_assets_folder($directory)
+	{
+		if (substr($directory, -1) == '/')
+		{
+			$directory = substr($directory, 0, -1);
+		}
+		
+		if (!file_exists($directory) || !is_dir($directory))
+		{
+			return FALSE;
+		}
+		else
+		{
+			$handle = opendir($directory);
+			while (FALSE !== ($item = readdir($handle)))
+			{
+				if ($item != '.' && $item != '..')
+				{
+					$path = $directory . '/' . $item;
+					if (!rmdir($path))
+					{
+						return FALSE;
+					}
+				}
+			}
+			closedir($handle);
+			
+			return TRUE;
+		}
+	} // End of _remove_assets_folder
 	
 } // End of Ci class
 
@@ -541,6 +804,7 @@ class MVC extends Fire
 	 * @access public
 	 * @param string $type : The type of file to create. ie: controller or model.
 	 * @param string $name : The name of the file the user wants to create.
+	 * @return void
 	 * @author Aziz Light
 	 */
 	public function __construct($type, $name = '')
@@ -571,7 +835,7 @@ class MVC extends Fire
 	{
 		if ($this->_success === TRUE)
 		{
-			$_message = $this->name . ' ' . ucfirst($this->type) . ' created successfully!';
+			$_message = ucfirst($this->name) . ' ' . ucfirst($this->type) . ' successfully created!';
 			self::_display_message('', $_message);
 			unset($_message);
 		}
@@ -655,7 +919,13 @@ class MVC extends Fire
 	
 // ------------------------------------------------------------------------
 	
-	// TODO - Document that method!!
+	/**
+	 * Creates a new file in the project.
+	 *
+	 * @access public
+	 * @return void
+	 * @author Aziz Light
+	 */
 	public function create()
 	{
 		if (empty($this->name))
@@ -665,7 +935,6 @@ class MVC extends Fire
 			{
 				$_error = 'You didn\'t specify a name for the ' . $this->type . ' you want to create...';
 				self::_display_message('error', $_error);
-				exit();
 			}
 		}
 		
@@ -685,7 +954,6 @@ class MVC extends Fire
 			default:
 				$_error = 'You specified an unknown type!!';
 				self::_display_message('error', $_error);
-				exit();
 		}
 	} // End of create
 	
@@ -709,7 +977,6 @@ class MVC extends Fire
 			{
 				$_error = 'You did not provide a name for the action you want to create!';
 				self::_display_message('error', $_error);
-				exit();
 			}
 		}
 		
@@ -763,7 +1030,6 @@ class MVC extends Fire
 		{
 			$_error = 'You are not in the ' . self::application_folder_name . ' folder!!!';
 			self::_display_message('error', $_error);
-			exit();
 		}
 		return TRUE;
 	} // End of _check_location
@@ -792,7 +1058,6 @@ class MVC extends Fire
 		{
 			$_error = 'You specified an unknown type!!';
 			self::_display_message('error', $_error);
-			exit();
 		}
 	} // End of _check_type
 	
@@ -831,6 +1096,7 @@ class MVC extends Fire
 			self::_display_message('warning', $_warning);
 			unset($_warning);
 			
+			$i = 0;
 			do {
 				echo "Do you want to overwrite ${file}? [Default: y]\n[y/n] ";
 				$_answer = fgets(STDIN);
@@ -840,33 +1106,35 @@ class MVC extends Fire
 				}
 				elseif (trim($_answer) == 'y')
 				{
-					$ok = 42;
-					break;
+					$i = 42;
 				}
 				else
 				{
 					echo "I don\'t understand...\n";
+					$i++;
 				}
 				
-			} while (strtolower(trim($_answer)) == 'y' || strtolower(trim($_answer)) == 'n'); // FIXME - WFT?!?!
+			} while ($i < 3);
 			unset($_answer);
 		}
 		
-		if ($fp = @fopen ($file, 'wb'))
+		if ($i > 3)
 		{
-			flock($fp, LOCK_EX);
-			fwrite($fp, $config['template']);
-			flock($fp, LOCK_UN);
-			fclose($fp);
-			
-			$this->_success = TRUE;
-			return;
-		}
-		else
-		{
-			$_error = 'Unable to create the ' . ucfirst($config['filename']) . ' ' . $config['type'] . '...';
-			self::_display_message('error', $_error);
-			exit();
+			if ($fp = @fopen ($file, 'wb'))
+			{
+				flock($fp, LOCK_EX);
+				fwrite($fp, $config['template']);
+				flock($fp, LOCK_UN);
+				fclose($fp);
+				
+				$this->_success = TRUE;
+				return;
+			}
+			else
+			{
+				$_error = 'Unable to create the ' . ucfirst($config['filename']) . ' ' . $config['type'] . '...';
+				self::_display_message('error', $_error);
+			}
 		}
 	} // End of _make
 	
@@ -886,7 +1154,6 @@ class MVC extends Fire
 		{
 			$_error = 'You need to pass a template as parameter to add actions to it...';
 			self::_display_message('error', $_error);
-			exit();
 		}
 		elseif (empty($this->_actions))
 		{
