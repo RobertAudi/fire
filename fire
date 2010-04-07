@@ -1,11 +1,21 @@
 #!/usr/bin/php -q
 <?php
 
+/*
+ * GLOBAL TODOs
+ * ------------
+ * FIXME - Fix the indentation in the MVC::controller() and MVC::model() methods
+ * 
+ */
+
+error_reporting(E_ALL & E_STRICT);
+
 /**
 * Master class. Shows the help, contains all the configuration constants and all the static methods.
 * 
 * @package Fire
 * @author Aziz Light
+* @link http://bitbucket.org/azizlight/fire
 * @link http://github.com/AzizLight/fire
 * @copyright Copyright (c) 2010, Aziz Light
 * @license http://www.opensource.org/licenses/mit-license.php MIT License
@@ -28,7 +38,7 @@ class Fire
 	 * Set to FALSE if you want to set up the class manually and don't want to be asked
 	 * questions when you create a new project.
 	 */
-	const verbose_mode = TRUE;
+	const verbose_mode = FALSE;
 	
 	/*
 	|--NON-verbose mode configuration constants-------------------------------
@@ -63,6 +73,11 @@ class Fire
 	const application_folder_name = 'application';
 	
 	/**
+	 * The name of the system folder.
+	 */
+	const system_folder_name = 'system';
+	
+	/**
 	 * Parent controller that will extend every other controller
 	 */
 	const parent_controller = 'Controller';
@@ -92,13 +107,41 @@ class Fire
 // ------------------------------------------------------------------------
 	
 	/**
+	 * This static variable will contain all the controllers the user will
+	 * create for each query.
+	 *
+	 * @access private
+	 * @static
+	 * @var array
+	 */
+	private static $_controllers = array();
+	
+	/**
+	 * This static variable will contain all the models the user will
+	 * create for each query.
+	 *
+	 * @access private
+	 * @static
+	 * @var array
+	 */
+	private static $_models = array();
+
+	/**
+	 * @access private
+	 * @static
+	 * @var array
+	 */
+	private static $_views = array();
+	
+	/**
 	 * Array containing the list of subfolders that will
 	 * be created in the assets folder
 	 *
 	 * @access private
+	 * @static
 	 * @var array
 	 */
-	private $_assets_subfolders = array(
+	protected static $_assets_subfolders = array(
 		'cs',
 		'js',
 		'images',
@@ -109,13 +152,17 @@ class Fire
 	 * what it needs to do
 	 *
 	 * @access private
+	 * @static
 	 * @var array
 	 */
 	private static $_valid_cli_params = array(
 		'controller',
+		'controller+',
+		'+controller',
 		'model',
-		'new',
+		'view',
 		'ci',
+		'help',
 	);
 	
 // ------------------------------------------------------------------------
@@ -137,22 +184,206 @@ class Fire
 	 * Validate a query. If duplicate arguments were passed to the command line
 	 * the validation will fail!
 	 *
+	 * @todo - rewrite the doc for this method
 	 * @access public
+	 * @static
 	 * @param array $args : Array of arguments. Typically, $argv;
 	 * @return void|bool : Throws an Exception if validation fails. Otherwise, return TRUE.
 	 * @author Aziz Light
 	 */
-	public static function validate($args)
+	public static function init($args)
 	{
+		// First thing to do is to verify that the first parameter is a valid keyword!
+		if (!in_array($args[1], self::$_valid_cli_params))
+			throw new Exception($args[1] . ' is not a valid type! Type fire help for instructions on how to use this script!');
+		
+		$next_param = FALSE; // is the next keyword an action/method?
+		$param = FALSE; // is the current keyword an action/method?
+		$view_file = FALSE; // if the current keyword is an action and this variable is set to true, then a view will be created for that action.
+		$last_type = '';
+		$last_of_type = 0;
+
 		$max = count($args);
 		for ($i = 1; $i < $max; $i++)
 		{
+			// Check that there isn't two keywords one after the other.
 			if (in_array($args[$i - 1], self::$_valid_cli_params) && in_array($args[$i], self::$_valid_cli_params))
+			{
 				throw new Exception('Duplicate keywords detected!');
+			}
+			
+			if (in_array($args[$i], self::$_valid_cli_params))
+			{
+				if ($args[$i] == 'controller' || $args[$i] == 'controller+' || $args[$i] == 'model' || $args[$i] == 'view')
+				{
+					$last_type = $args[$i];
+					$param = FALSE;
+					$next_param = FALSE;
+
+					if ($args[$i] != 'controller+')
+					{
+						$view_file = FALSE;
+					}
+
+					continue;
+				}
+				elseif ($args[$i] == 'help')
+				{
+					Fire::help();
+				}
+				elseif ($args[$i] == 'ci')
+				{
+					$fire = new Ci();
+					$fire->create_project($args[$i + 1]);
+					exit();
+				}
+			}
+			else
+			{
+				if (substr($args[$i], -1) == ':')
+				{
+					$next_param = TRUE;
+					$args[$i] = rtrim($args[$i], ':');
+				}
+
+				if (substr($args[$i], 0, 1) == '+')
+				{
+					if ($last_type == 'controller' || $last_type == 'controller+')
+					{
+						$last_type = '+controller';
+						$view_file = TRUE;
+					}
+					$args[$i] = ltrim($args[$i], '+');
+				}
+			}
+			
+			if ($param)
+			{
+				if (substr($args[$i], -1) == '.')
+				{
+					$next_param = FALSE;
+					$args[$i] = rtrim($args[$i], '.');
+				}
+
+				if ($last_type == 'controller' || $last_type == 'controller+')
+				{
+					self::$_controllers[$args[$last_of_type]][] = $args[$i];
+
+					if ($view_file)
+					{
+
+						echo $args[$i] . "\n";
+						self::$_views[$args[$last_of_type]][] = $args[$i];
+
+						if ($next_param === FALSE)
+						{
+							$view_file = FALSE;
+						}
+					}
+				}
+				elseif ($last_type == 'model')
+				{
+					self::$_models[$args[$last_of_type]][] = $args[$i];
+				}
+				elseif ($last_type == 'view')
+				{
+					self::$_views[$args[$last_of_type]][] = $args[$i];
+				}
+			}
+			elseif ($last_type == 'controller')
+			{
+				$last_of_type = $i;
+				self::$_controllers[$args[$i]] = array();
+			}
+			elseif ($last_type == 'controller+' || $last_type == '+controller')
+			{
+				$last_of_type = $i;
+				self::$_controllers[$args[$i]] = array();
+				self::$_models[Inflector::singularize($args[$i])] = array();
+				self::$_views[$args[$i]] = array();
+				
+				if ($last_type == '+controller')
+				{
+					$last_type = 'controller';
+				}
+			}
+			elseif ($last_type == 'model')
+			{
+				$last_of_type = $i;
+				self::$_models[$args[$i]] = array();
+			}
+			elseif ($last_type == 'view')
+			{
+				$last_of_type = $i;
+				self::$_views[$args[$i]] = array();
+			}
+
+			if ($next_param === TRUE)
+			{
+				$param = TRUE;
+			}
+			else
+				$param = FALSE;
 		}
 		
+		self::_create();
+		
 		return TRUE;
-	} // End of validate
+	} // End of init
+	
+// ------------------------------------------------------------------------
+	
+	/**
+	 * Create the controllers, the methods and the views.
+	 * 
+	 * @access private
+	 * @static
+	 * @return void
+	 * @author Aziz Light
+	 */
+	private static function _create()
+	{
+		// Create the controllers
+		foreach (self::$_controllers as $controller => $actions)
+		{
+			$fire = new MVC('controller', $controller);
+			if (!empty($actions))
+			{
+				// Create the actions
+				foreach ($actions as $action)
+				{
+					$fire->new_action($action);
+				}
+			}
+			$fire->create();
+			unset($fire);
+		}
+
+		// Create the models
+		foreach (self::$_models as $model => $methods)
+		{
+			$fire = new MVC('model', $model);
+			if (!empty($methods))
+			{
+				foreach ($methods as $method)
+				{
+					$fire->new_method($method);
+				}
+			}
+			$fire->create();
+			unset($fire);
+		}
+
+		// Create the views
+		foreach (self::$_views as $views_folder => $views)
+		{
+			$fire = new MVC('view', $views_folder, $views);
+			$fire->create();
+			unset($fire);
+		}
+
+		return;
+	} // End of create
 	
 // ------------------------------------------------------------------------
 	
@@ -160,6 +391,7 @@ class Fire
 	 * Display some help and stop the execution
 	 *
 	 * @access public
+	 * @static
 	 * @return void
 	 * @author Aziz Light
 	 */
@@ -177,6 +409,7 @@ class Fire
 	 * NOTE - This method is exactly the same in the Ci class and the MVC class; I might want to do something about that...
 	 *
 	 * @access protected
+	 * @static
 	 * @param string $type : The type of the message. Leave empty to send a regular message.
 	 * @param string $message : The message.
 	 * @return void
@@ -204,7 +437,7 @@ class Fire
 		$_message .= $_label . $message;
 		$_message .= "\n";
 		
-		echo $_message;
+		fwrite(STDOUT, $_message);
 		unset($_label, $_message, $message);
 		
 		if ($type == 'error' && $continue === FALSE)
@@ -224,6 +457,7 @@ class Fire
  * @package Fire
  * @subpackage Ci
  * @author Aziz Light
+ * @link http://bitbucket.org/azizlight/fire
  * @link http://github.com/AzizLight/fire
  * @copyright Copyright (c) 2010, Aziz Light
  * @license http://www.opensource.org/licenses/mit-license.php MIT License
@@ -235,6 +469,7 @@ class Ci extends Fire
 	 * of the created project to the message that the destructor will display
 	 * if a project was successfully created.
 	 *
+	 * @access private
 	 * @var string
 	 */
 	private $_name;
@@ -260,10 +495,6 @@ class Ci extends Fire
 		parent::__construct();
 		
 		$this->_success = FALSE;
-		
-		$this->_assets_subfolders = array(
-			'css', 'js', 'images',
-		);
 	}
 	
 // ------------------------------------------------------------------------
@@ -322,65 +553,77 @@ class Ci extends Fire
 			$name = $this->_get_name($destination);
 		$destination .= $name;
 		
+		/*
+		 * TODO - Create the blocks that will let the user remove the user_guide and license.txt.
+		 * TODO - Create the blocks that will let the user remove welcome controller + view. Fire also need to send a notice advising to change the default route.
+		 */
+		
 		if ($this->_import_ci($destination))
 		{
 			// -Verbose-mode-----------------------------------------------------------
 			if (self::verbose_mode)
 			{
 				// -Move-the-application folder--------------------------------------------
-				$_default_answer = (self::move_application_folder) ? 'yes' : 'no';
-				$_question  = 'Do you want to move the application folder outside of the system folder? [Default: ' . $_default_answer . ']';
-				echo $_question;
-				
-				$_answer = strtolower(trim(fgets(STDIN)));
-				
-				if ($_answer == 'yes' || $_answer == 'y' || (empty($_answer) && $_default_answer == 'yes'))
+				// NOTE - If the application folder is not in the system folder, that would mean one of two things:
+				//        - The application_folder_name constant is not the same as the application folder's name.
+				//        - You have manually moved the application folder.
+				//      - In both cases, the user won't be asked wether or not he wants to move the application
+				//        folder out of the system folder.
+				if (is_dir($destination . self::system_folder_name . '/' . self::application_folder_name))
 				{
-					if (!$this->_move_application_folder($destination))
-					{
-						$_error = 'Unable to move the application folder...';
-						self::_display_message('error', $_error, TRUE);
-						unset($_error);
-					}
-				}
-				elseif ($_answer != 'no' || $_answer != 'n')
-				{
-					$i = 0;
-					do
-					{
-						echo 'I do not understand...' . "\n";
-						echo $_question;
-						$_answer = strtolower(trim(fgets(STDIN)));
-						if ($_answer == 'yes' || $_answer == 'y' || (empty($_answer) && $_default_answer == 'yes'))
-						{
-							if (!$this->_move_application_folder($destination))
-							{
-								$_error = 'Unable to move the application folder...';
-								self::_display_message('error', $_error, TRUE);
-								unset($_error);
-							}
-							$i = 42;
-						}
-						elseif ($_answer == 'no' || $_answer == 'n')
-						{
-							$i = 42;
-						}
-						$i++;
-					} while ($i < 3);
+					$_default_answer = (self::move_application_folder) ? 'yes' : 'no';
+					$_question  = "'Do you want to move the application folder outside of the system folder? [Default: ${_default_answer}]\n[yes/no] ";
+					fwrite(STDOUT, $_question);
 					
-					if ($i < 42)
+					$_answer = strtolower(trim(fgets(STDIN)));
+					
+					if ($_answer == 'yes' || $_answer == 'y' || (empty($_answer) && $_default_answer == 'yes'))
 					{
-						$_warning = 'No understandable answer was provided to the previous question...The choice will be made for you...';
-						self::_display_message('warning', $_warning);
-						unset($_warning);
-						
-						if (self::move_application_folder == 'yes')
+						if (!$this->_move_application_folder($destination))
 						{
-							if (!$this->_move_application_folder($destination))
+							$_error = 'Unable to move the application folder...';
+							self::_display_message('error', $_error, TRUE);
+							unset($_error);
+						}
+					}
+					elseif ($_answer != 'no' || $_answer != 'n')
+					{
+						$i = 0;
+						do
+						{
+							fwrite(STDOUT, "I do not understand...\n$_question");
+							$_answer = strtolower(trim(fgets(STDIN)));
+							if ($_answer == 'yes' || $_answer == 'y' || (empty($_answer) && $_default_answer == 'yes'))
 							{
-								$_error = 'Unable to move the application folder...';
-								self::_display_message('error', $_error, TRUE);
-								unset($_error);
+								if (!$this->_move_application_folder($destination))
+								{
+									$_error = 'Unable to move the application folder...';
+									self::_display_message('error', $_error, TRUE);
+									unset($_error);
+								}
+								$i = 42;
+							}
+							elseif ($_answer == 'no' || $_answer == 'n')
+							{
+								$i = 42;
+							}
+							$i++;
+						} while ($i < 3);
+					
+						if ($i < 42)
+						{
+							$_warning = 'No understandable answer was provided to the previous question...The choice will be made for you...';
+							self::_display_message('warning', $_warning);
+							unset($_warning);
+						
+							if (self::move_application_folder == 'yes')
+							{
+								if (!$this->_move_application_folder($destination))
+								{
+									$_error = 'Unable to move the application folder...';
+									self::_display_message('error', $_error, TRUE);
+									unset($_error);
+								}
 							}
 						}
 					}
@@ -389,64 +632,67 @@ class Ci extends Fire
 				// ------------------------------------------------------------------------
 				
 				// -Create-assets-folder---------------------------------------------------
-				$_default_answer = (self::create_assets_folder) ? 'yes' : 'no';
-				$_question  = 'Do you want to create an assets folder? [Default: ' . $_default_answer . '] ';
-				echo $_question;
-				
-				$_answer = strtolower(trim(fgets(STDIN)));
-				if ($_answer == 'yes' || $_answer = 'y' || (empty($_answer) && $_default_answer == 'yes'))
+				// NOTE - The assets folder will only be created if it's not already there.
+				if (!is_dir($destination . self::name_of_assets_folder))
 				{
-					if (!$this->_create_assets_folders($destination))
-					{
-						$_error = 'Unable to create the assets folder...';
-						self::_display_message('error', $_error, TRUE);
-						unset($_error);
-					}
-				}
-				elseif ($_answer != 'no' || $_answer != 'n')
-				{
-					$i = 0;
-					do
-					{
-						echo 'I do not understand...' . "\n";
-						echo $_question;
-						$_answer = strtolower(trim(fgets(STDIN)));
-						if ($_answer == 'yes' || $_answer == 'y' || (empty($_answer) && $_default_answer == 'yes'))
-						{
-							if (!$this->_create_assets_folders($destination))
-							{
-								$_error = 'Unable to create the assets folder...';
-								self::_display_message('error', $_error, TRUE);
-								unset($_error);
-							}
-							$i = 42;
-						}
-						elseif ($_answer == 'no' || $_answer == 'n')
-						{
-							$i = 42;
-						}
-						$i++;
-					} while ($i < 3);
+					$_default_answer = (self::create_assets_folder) ? 'yes' : 'no';
+					$_question  = "'Do you want to create an assets folder? [Default: ${_default_answer}\n[yes/no] ";
+					fwrite(STDOUT, $_question);
 					
-					if ($i < 42)
+					$_answer = strtolower(trim(fgets(STDIN)));
+					if ($_answer == 'yes' || $_answer = 'y' || (empty($_answer) && $_default_answer == 'yes'))
 					{
-						$_warning = 'No understandable answer was provided to the previous question...The choice will be made for you...';
-						self::_display_message('warning', $_warning);
-						unset($_warning);
-						
-						if (self::create_assets_folder == 'yes')
+						if (!$this->_create_assets_folders($destination))
 						{
-							if (!$this->_create_assets_folders($destination))
+							$_error = 'Unable to create the assets folder...';
+							self::_display_message('error', $_error, TRUE);
+							unset($_error);
+						}
+					}
+					elseif ($_answer != 'no' || $_answer != 'n')
+					{
+						$i = 0;
+						do
+						{
+							fwrite(STDOUT, "I do not understand...\n$_question");
+							$_answer = strtolower(trim(fgets(STDIN)));
+							if ($_answer == 'yes' || $_answer == 'y' || (empty($_answer) && $_default_answer == 'yes'))
 							{
-								$_error = 'Unable to create the assets folder...';
-								self::_display_message('error', $_error, TRUE);
-								unset($_error);
+								if (!$this->_create_assets_folders($destination))
+								{
+									$_error = 'Unable to create the assets folder...';
+									self::_display_message('error', $_error, TRUE);
+									unset($_error);
+								}
+								$i = 42;
+							}
+							elseif ($_answer == 'no' || $_answer == 'n')
+							{
+								$i = 42;
+							}
+							$i++;
+						} while ($i < 3);
+						
+						if ($i < 42)
+						{
+							$_warning = 'No understandable answer was provided to the previous question...The choice will be made for you...';
+							self::_display_message('warning', $_warning);
+							unset($_warning);
+							
+							if (self::create_assets_folder == 'yes')
+							{
+								if (!$this->_create_assets_folders($destination))
+								{
+									$_error = 'Unable to create the assets folder...';
+									self::_display_message('error', $_error, TRUE);
+									unset($_error);
+								}
 							}
 						}
 					}
+					
+					unset($_answer, $_question, $_default_answer);
 				}
-				
-				unset($_answer, $_question, $_default_answer);
 				// ------------------------------------------------------------------------
 			} // End of Verbose mode
 			else
@@ -454,21 +700,27 @@ class Ci extends Fire
 				// -Non-Verbose-Mode-------------------------------------------------------
 				if (self::move_application_folder == 'yes')
 				{
-					if (!$this->_move_application_folder($destination))
+					if (is_dir($destination . '/' . self::system_folder_name . '/' . self::application_folder_name))
 					{
-						$_error = 'Unable to move the application folder...';
-						self::_display_message('error', $_error, TRUE);
-						unset($_error);
+						if (!$this->_move_application_folder($destination))
+						{
+							$_error = 'Unable to move the application folder...';
+							self::_display_message('error', $_error, TRUE);
+							unset($_error);
+						}
 					}
 				}
 				
 				if (self::create_assets_folder == 'yes')
 				{
-					if (!$this->_create_assets_folders($destination))
+					if (!is_dir($destination . '/' . self::name_of_assets_folder))
 					{
-						$_error = 'Unable to create the assets folder...';
-						self::_display_message('error', $_error, TRUE);
-						unset($_error);
+						if (!$this->_create_assets_folders($destination))
+						{
+							$_error = 'Unable to create the assets folder...';
+							self::_display_message('error', $_error, TRUE);
+							unset($_error);
+						}
 					}
 				}
 			}
@@ -499,7 +751,7 @@ class Ci extends Fire
 	 */
 	private function _get_name($destination)
 	{
-		echo 'Choose a name for your project: ';
+		fwrite(STDOUT, 'Choose a name for your project: ');
 		$name = trim(fgets(STDIN));
 		
 		$i = 0;
@@ -526,7 +778,7 @@ class Ci extends Fire
 				break;
 			}
 			
-			echo 'Choose a ' . $state . ' name for your project: ';
+			fwrite(STDOUT, 'Choose a ' . $state . ' name for your project: ');
 			$name = trim(fgets(STDIN));
 			$i++;
 		} while ($i < 3);
@@ -627,8 +879,19 @@ class Ci extends Fire
 	{
 		if (substr($project_path, - 1) != '/')
 			$project_path .= '/';
-		// @
-		return (rename($project_path . 'system/' . self::application_folder_name, $project_path . self::application_folder_name));
+			
+		if (!is_dir($project_path . self::system_folder_name . '/' . self::application_folder_name))
+		{
+			$_notice  = "The application folder wasn't found in the system folder.\n";
+			$_notice .= "- Check that the application_folder_name constant is the same as the application folder's name.\n";
+			$_notice .= "- If it's the same, that would probably mean that you manually moved the application folder. In that case, you should set the move_application_folder constant to FALSE.";
+			self::_display_message($_notice);
+			unset($_notice);
+			
+			return TRUE;
+		}
+		
+		return (@rename($project_path . self::system_folder_name . '/' . self::application_folder_name, $project_path . self::application_folder_name));
 	} // End of _move_application_folder
 	
 // ------------------------------------------------------------------------
@@ -648,16 +911,14 @@ class Ci extends Fire
 		if (substr($project_path, - 1) != '/')
 			$project_path .= '/';
 		
-		// @
-		if (!mkdir($project_path . self::name_of_assets_folder, 0755))
+		if (!@mkdir($project_path . self::name_of_assets_folder, 0755))
 		{
 			return FALSE;
 		}
 		
-		foreach ($this->_assets_subfolders as $asset)
+		foreach (self::$_assets_subfolders as $asset)
 		{
-			// @
-			if (!mkdir($project_path . self::name_of_assets_folder . '/' . $asset, 0755))
+			if (!@mkdir($project_path . self::name_of_assets_folder . '/' . $asset, 0755))
 			{
 				// if (!$this->_remove_assets_folder($project_path))
 				if (!$this->_recursive_remove_directory($project_path))
@@ -676,51 +937,10 @@ class Ci extends Fire
 // ------------------------------------------------------------------------
 	
 	/**
-	 * Remove the assets folder and all of its subfolders.
-	 *
-	 * @access private
-	 * @param string $directory : The directory where the new project was created.
-	 * @return bool
-	 * @author Aziz Light
-	 */
-	private function _remove_assets_folder($directory)
-	{
-		if (substr($directory, -1) == '/')
-		{
-			$directory = substr($directory, 0, -1);
-		}
-		
-		if (!file_exists($directory) || !is_dir($directory))
-		{
-			return FALSE;
-		}
-		else
-		{
-			$handle = opendir($directory);
-			while (FALSE !== ($item = readdir($handle)))
-			{
-				if ($item != '.' && $item != '..')
-				{
-					$path = $directory . '/' . $item;
-					if (!rmdir($path))
-					{
-						return FALSE;
-					}
-				}
-			}
-			closedir($handle);
-			
-			return TRUE;
-		}
-	} // End of _remove_assets_folder
-	
-// ------------------------------------------------------------------------
-	
-	/**
 	 * Remove a folder and all of its contents.
 	 *
 	 * @access private
-	 * @param string $directory : the path to the folder to remove.
+	 * @param string $directory : The path to the folder to remove.
 	 * @param bool $empty : If TRUE, the directory and subdirectories will be emptied but not removed.
 	 * @return bool
 	 * @author lixlpixel
@@ -777,6 +997,7 @@ class Ci extends Fire
  * @package Fire
  * @subpackage MVC
  * @author Aziz Light
+ * @link http://bitbucket.org/azizlight/fire
  * @link http://github.com/AzizLight/fire
  * @copyright Copyright (c) 2010, Aziz Light
  * @license http://www.opensource.org/licenses/mit-license.php MIT License
@@ -787,25 +1008,35 @@ class MVC extends Fire
 	 * The type of element you want to create. ie: 'controller', 'model', 'view'.
 	 * It can also be 'help'.
 	 *
-	 * @access public
+	 * @access private
 	 * @var string
 	 */
-	public $type;
+	private $_type;
 	
 	/**
 	 * The name of the the element you want to create
 	 * or the name of the help section you want to display.
 	 *
-	 * @access public
+	 * @access private
 	 * @var string
 	 */
-	public $name;
+	private $_name;
+	
+	/**
+	 * This array will typically contain the views that will be
+	 * created in the views folder. Later on, actions and methods
+	 * might also be passed to this array.
+	 *
+	 * @access private
+	 * @var array
+	 */
+	private $_extras;
 	
 	/**
 	 * Array of actions/methods to be added to the controller or model.
 	 *
 	 * @access private
-	 * @var string
+	 * @var array
 	 */
 	private $_actions;
 	
@@ -819,31 +1050,33 @@ class MVC extends Fire
 	private $_params;
 	
 	/**
-	 * Array of optional params. This is variable is re-initialized everytime a new
-	 * action is created and is destroyed everytime a new controller or model is created.
+	 * The destructor method will not display a success message unless this variable is true.
 	 *
 	 * @access private
-	 * @var array
-	 */
-	private $_optional_params;
-	
-	/**
-	 * The destructor method will not display a success message unless this variable is true;
-	 *
-	 * @access private
-	 * @var string
+	 * @var bool
 	 */
 	private $_success;
 	
 	/**
-	 * The message that will appear everytime a new file is created.
-	 * Everytime there is a "change" it will be logged in this variable.
-	 * ie: everytime a new action is created, it will be logged.
-	 *
+	 * This variable is only used with views. It's there so that the destructor
+	 * doesn't say that a view folder was created even though the folder was
+	 * there before the execution of the script.
+	 * 
 	 * @access private
+	 * @var bool
+	 */
+	private $_new_views_folder;
+	
+	/**
+	 * The location of the user. This variable will basically tell if the user is
+	 * in the application folder or the project root.
+	 *
+	 * @todo - I'm not yet sure what type this static variable should be; set as string for the time being.
+	 * @access private
+	 * @static
 	 * @var string
 	 */
-	private $_log;
+	private static $_location;
 	
 // ------------------------------------------------------------------------
 	
@@ -855,19 +1088,22 @@ class MVC extends Fire
 	 * @access public
 	 * @param string $type : The type of file to create. ie: controller or model.
 	 * @param string $name : The name of the file the user wants to create.
+	 * @param array $extras : This is typically an array of views. The option to pass actions/methods to the constructor via this parameter may be available later on.
 	 * @return void
 	 * @author Aziz Light
 	 */
-	public function __construct($type, $name = '')
+	public function __construct($type, $name = '', $extras = array())
 	{
 		parent::__construct();
 		
 		$this->_success = FALSE;
+		$this->_new_views_folder = FALSE;
 		
 		if ($type == 'help' || ($this->_check_location() === TRUE && $this->_check_type($type) === TRUE))
 		{
-			$this->type = $type;
-			$this->name = (isset($name)) ? $name : '';
+			$this->_type = $type;
+			$this->_name = $name;
+			$this->_extras = $extras;
 			$this->_actions = array();
 		}
 	} // End of __construct
@@ -886,9 +1122,26 @@ class MVC extends Fire
 	{
 		if ($this->_success === TRUE)
 		{
-			$_message = ucfirst($this->name) . ' ' . ucfirst($this->type) . ' successfully created!';
-			self::_display_message('', $_message);
-			unset($_message);
+			if ($this->_type == 'view')
+			{
+				if ($this->_new_views_folder)
+					$_message = ucfirst($this->_name) . " views folder successfully created!";
+				elseif (empty($this->_extras))
+					$_message = "The {$this->_name} views folder already exists!";
+
+				foreach ($this->_extras as $view)
+				{
+					$_message .= "\n" . ucfirst($view) . " view successfully created in the " . ucfirst($this->_name) . " views folder!";
+				}
+				self::_display_message('', $_message);
+				unset($_message);
+			}
+			else
+			{
+				$_message = ucfirst($this->_name) . ' ' . ucfirst($this->_type) . ' successfully created!';
+				self::_display_message('', $_message);
+				unset($_message);
+			}
 		}
 	} // End of __destruct
 	
@@ -897,77 +1150,263 @@ class MVC extends Fire
 	/**
 	 * Controller template
 	 *
-	 * @access public
+	 * @access private
 	 * @param string $name : The name of the controller. Should be plural.
 	 * @return void
 	 * @author Aziz Light
 	 */
-	public function controller()
+	private  function _controller()
 	{
-		$controller  = "<?php if (!defined('BASEPATH')) exit('No direct script access allowed');\n\n";
-		$controller .= "class " . ucfirst($this->name) . " extends " . self::parent_controller . "\n";
-		$controller .= "{\n";
+		$class_name = ucfirst($this->_name);
+		$parent_controller = self::parent_controller;
+		$parent_controller_constructor = self::parent_controller_constructor;
+		$application_folder_name = self::application_folder_name;
 		
-			$controller .= "\t/**\n";
-			$controller .= "\t * The Constructor!\n";
-			$controller .= "\t **/\n";
-			$controller .= "\tpublic function __construct()\n";
-			$controller .= "\t{\n";
-				$controller .= "\t\tparent::" . self::parent_controller_constructor . "();\n";
-			$controller .= "\t}\n";
-		
-			$controller .= "\t\n";
-			$controller .= "\t// ------------------------------------------------------------------------\n";
-			$controller .= "\t\n";
-			
-		
-			$controller .= "\tpublic function index()\n";
-			$controller .= "\t{\n";
-				$controller .= "\t\t\n";
-			$controller .= "\t} // End of index\n";
-			$controller .= "\t\n";
-			
-			$controller  = $this->_add_actions($controller);
-		
-		$controller .= "} // End of the " . ucfirst($this->name) . " controller\n\n";
-		$controller .= "/* End of file " . $this->name . ".php */\n";
-		$controller .= "/* Location ./application/controllers/" . $this->name . ".php */";
+$controller = <<<CONTROLLER
+<?php if (!defined('BASEPATH')) exit('No direct script access allowed');
+
+class {$class_name} extends {$parent_controller}
+{
+	/**
+	 * The Constructor!
+	 **/
+	public function __construct()
+	{
+		parent::{$parent_controller_constructor}();
+	}
+CONTROLLER;
+
+		$controller = $this->_add_actions($controller);
+
+$controller .= <<<CONTROLLER
+	
+} // End of the {$class_name} controller
+
+/* End of file {$this->_name}.php */
+/* Location ./{$application_folder_name}/controllers/{$this->_name}.php */
+CONTROLLER;
 		
 		return $controller;
-	} // End of controller
+	} // End of _controller
 	
 // ------------------------------------------------------------------------
 	
 	/**
 	 * Model Template
 	 *
-	 * @access public
+	 * @access private
 	 * @param string $name : The name of the model without the suffix. Should be singular.
 	 * @return void
 	 * @author Aziz Light
 	 */
-	public function model()
+	private function _model()
 	{
-		$model  = "<?php if (!defined('BASEPATH')) exit('No direct script access allowed');\n\n";
-		$model .= "class " . ucfirst($this->name) . "_model extends " . self::parent_model . "\n";
-		$model .= "{\n";
-			$model .= "\t/**\n";
-			$model .= "\t * The Constructor!\n";
-			$model .= "\t **/\n";
-			$model .= "\tpublic function __construct()\n";
-			$model .= "\t{\n";
-				$model .= "\t\tparent::" . self::parent_model_constructor . "();\n";
-			$model .= "\t}\n";
-			
-			$model  = $this->_add_actions($model);
+		$class_name = ucfirst($this->_name);
+		$parent_model = self::parent_model;
+		$parent_model_constructor = self::parent_model_constructor;
+		$application_folder_name = self::application_folder_name;
 		
-		$model .= "} // End of the " . ucfirst($this->name) . " model\n\n";
-		$model .= "/* End of file " . $this->name . self::model_suffix . ".php */\n";
-		$model .= "/* Location ./application/models/" . $this->name . self::model_suffix . ".php */";
+$model = <<<MODEL
+<?php if (!defined('BASEPATH')) exit('No direct script access allowed');
+
+class {$class_name} extends {$parent_model}
+{
+	/**
+	 * The Constructor!
+	 **/
+	public function __construct()
+	{
+		parent::{$parent_model_constructor}();
+	}
+MODEL;
+		$model  = $this->_add_actions($model);
+$model .= <<<MODEL
+} // End of the {$class_name}
+
+/* End of file {$this->_name}.php */
+/* Location ./{$application_folder_name}/models/{$this->_name}.php */
+MODEL;
 		
 		return $model;
-	} // End of model
+	} // End of _model
 	
+// ------------------------------------------------------------------------
+
+	/**
+	 * Create the views subfolder if it doesn't exist and then create the
+	 * view files. Additionally creates an index.html file for restricting
+	 * direct access to the views subfolders.
+	 *
+	 * @access private
+	 * @param string $name : The name of the views folder.
+	 * @param array $view : The view files to create.
+	 * @return bool
+	 * @author Aziz Light
+	 */
+	private function _view($name = '', $views = array())
+	{
+		$folder = self::$_location . '/views/' . $name . '/';
+		
+		// If the views folder doesn't exist, try to create it.
+		if (!is_dir($folder))
+		{
+			if(!@mkdir($folder, 0755))
+			{
+				$_error = 'Unable to create the views folder...';
+				self::_display_message($_error, TRUE);
+				unset($_error, $folder);
+				
+				return FALSE;
+			}
+			$this->_new_views_folder = TRUE;
+		}
+		else
+		{
+			$this->_success = TRUE;
+			$this->_new_views_folder = FALSE;
+			exit();
+		}
+		
+		// Create the index.html file to restrict direct access to the views folder.
+		if (!file_exists($folder . 'index.html'))
+		{
+			if (($fp = @fopen ($folder . 'index.html', 'wb')))
+			{
+$index_contents = <<<EOT
+<html>
+<head>
+	<title>403 Forbidden</title>
+</head>
+<body>
+
+<p>Directory access is forbidden.</p>
+
+</body>
+</html>
+EOT;
+				flock($fp, LOCK_EX);
+				fwrite($fp, $index_contents);
+				flock($fp, LOCK_UN);
+				fclose($fp);
+			}
+		}
+
+		// Create teh view files.
+		if (!empty($views))
+		{
+			foreach ($views as $view)
+			{
+				if (file_exists($folder . $view . '.php'))
+				{
+					$_warning = 'The ' . $view . ' view file already exists!';
+					self::_display_message('warning', $_warning);
+					unset($_warning);
+
+					$i = 0;
+					do
+					{
+						fwrite(STDOUT, "Do you want to overwrite {$folder}{$view}.php ? [Default: no]\n[yes/no] ");
+						$_answer = trim(fgets(STDIN));
+
+						if ($_answer == 'no' || $_answer == 'n')
+						{
+							break;
+						}
+						elseif ($_answer == 'yes' || $_answer == 'y' || empty($_answer))
+						{
+							$i = 42;
+						}
+						else
+						{
+							fwrite(STDOUT, "I don't understand...\n");
+							$i++;
+						}
+					} while ($i < 3);
+					unset($_answer);
+
+				}
+				else
+				{
+					$i = 42;
+				}
+
+				if ($i > 3)
+				{
+					if (($fp = @fopen ($folder . $view . '.php', 'wb')))
+					{
+						fclose($fp);
+					}
+					else
+					{
+						$_error = 'Unable to create the ' . $view . ' view...';
+						self::_display_message('error', $_error, TRUE);
+					}
+				}
+			}
+		}
+
+		$this->_success = TRUE;
+		return TRUE;
+	}
+
+// ------------------------------------------------------------------------
+
+	/**
+	 * Create a new action.
+	 *
+	 * @access public
+	 * @param string $name : The name of the action.
+	 * @return string : The action.
+	 * @author Aziz Light
+	 */
+	public function new_action($name)
+	{
+		if (empty($name))
+		{
+			fwrite(STDOUT, 'Please enter the name of the action you want to create: ');
+			$name = fgets(STDIN);
+			$name = trim($name);
+			if (empty($name))
+			{
+				$_error = 'You did not provide a name for the action you want to create!';
+				self::_display_message('error', $_error);
+			}
+		}
+
+		$_access = (substr($name, 0, 1) == '_') ? 'private' : 'public';
+
+$_action = <<<ACTION
+// ------------------------------------------------------------------------
+	
+	{$_access} function {$name}()
+	{
+
+	} // End of {$name}
+	
+ACTION;
+
+		$this->_actions[] = $_action;
+
+		return TRUE;
+	} // End of new_action
+
+// ------------------------------------------------------------------------
+
+	/**
+	 * Alias of the new_action method.
+	 * Models don't have actions they have methods.
+	 *
+	 * @see MVC::new_action()
+	 * @access public
+	 * @param string $name : The name of the action.
+	 * @return string : The action.
+	 * @author Aziz Light
+	 */
+	public function new_method($name)
+	{
+		return $this->new_action($name);
+	}
+
 // ------------------------------------------------------------------------
 	
 	/**
@@ -979,22 +1418,28 @@ class MVC extends Fire
 	 */
 	public function create()
 	{
-		if (empty($this->name))
+		if (empty($this->_name))
 		{
-			$this->name = $this->_get_name();
-			if (empty($this->name))
+			$this->_name = $this->_get_name();
+			if (empty($this->_name))
 			{
-				$_error = 'You didn\'t specify a name for the ' . $this->type . ' you want to create...';
+				$_error  = 'You didn\'t specify a name for the ' . $this->_type;
+				$_error .= ($this->_type == 'view') ? 's folder': '';
+				$_error .= ' you want to create...';
 				self::_display_message('error', $_error);
 			}
 		}
-		
-		$config['type'    ] = $this->type;
-		$config['filename'] = $this->name;
-		$config['template'] = $this->$config['type']();
-		
-		switch ($this->type)
+
+		if ($this->_type != 'view')
 		{
+			$config['type'    ] = $this->_type;
+			$config['filename'] = $this->_name;
+			$config['template'] = $this->{'_' . $config['type']}();
+		}
+
+		switch ($this->_type)
+		{
+			// CHANGED - Removed the default case. Put it back it there is error poping out...there won't (shouldn't) be any!
 			case 'controller':
 				$this->_make($config);
 				break;
@@ -1002,58 +1447,19 @@ class MVC extends Fire
 				$config['filename'] = $config['filename'] . self::model_suffix;
 				$this->_make($config);
 				break;
-			default:
-				$_error = 'You specified an unknown type!!';
-				self::_display_message('error', $_error);
+			case 'view':
+				$this->_view($this->_name, $this->_extras);
+				break;
 		}
 	} // End of create
-	
-// ------------------------------------------------------------------------
-	
-	/**
-	 * Create a new action.
-	 *
-	 * @param string $name : The name of the action.
-	 * @return string : The action.
-	 * @author Aziz Light
-	 */
-	public function new_action($name)
-	{
-		if (empty($name))
-		{
-			echo 'Please enter the name of the action you want to create: ';
-			$name = fgets(STDIN);
-			$name = trim($name);
-			if (empty($name))
-			{
-				$_error = 'You did not provide a name for the action you want to create!';
-				self::_display_message('error', $_error);
-			}
-		}
 		
-		$_access = (substr($name, 0, 1) == '_') ? 'private' : 'public';
-		
-		$_action  = "// ------------------------------------------------------------------------\n\t\n";
-		$_action .= "\t" . $_access . ' function ' . $name . '()' . "\n";
-		$_action .= "\t{\n";
-		$_action .= "\t\t";
-		$_action .= "\n\t}";
-		$_action .= ' // End of ' . $name . "\n\t\n";
-		
-		$this->_actions[] = $_action;
-		
-		print_r($this->_action);
-		
-		return TRUE;
-	} // End of new_action
-	
 // ------------------------------------------------------------------------
 	
 	/**
 	 * Add a parameter to a controller's action or a model's medthod
 	 *
 	 * @access public
-	 * @param string $name : the name of the parameter (the name of the variable)
+	 * @param string $name : The name of the parameter (the name of the variable)
 	 * @return bool
 	 * @author Aziz Light
 	 */
@@ -1073,15 +1479,14 @@ class MVC extends Fire
 	 */
 	private function _check_location()
 	{
-		$location = getcwd();
-		$location = explode('/', $location);
-		$location = $location[count($location) - 1];
-		
-		if ((string)$location !== self::application_folder_name)
+		$location = FolderScanner::check_location(self::application_folder_name, self::system_folder_name);
+		if ($location === FALSE)
 		{
-			$_error = 'You are not in the ' . self::application_folder_name . ' folder!!!';
+			$_error = "No CodeIgniter project detected at your location.\nYou must either be in the root of a CodeIgniter project or in the application folder of a project!";
 			self::_display_message('error', $_error);
 		}
+		self::$_location = $location;
+		
 		return TRUE;
 	} // End of _check_location
 	
@@ -1098,7 +1503,7 @@ class MVC extends Fire
 	private function _check_type($type = '')
 	{
 		$_types = array(
-			'controller', 'model',
+			'controller', 'model', 'view',
 		);
 		
 		if (in_array(strtolower($type), $_types))
@@ -1123,7 +1528,10 @@ class MVC extends Fire
 	 */
 	private function _get_name()
 	{
-		echo 'Please enter the name of the ' . $this->type . ': ';
+		$message  = 'Please enter the name of the ' . $this->_type;
+		$message .= ($this->type == 'view') ? 's folder': '';
+		$message .= ': ';
+		fwrite(STDOUT, $message);
 		return trim(fgets(STDIN));
 	} // End of _get_name
 	
@@ -1139,7 +1547,7 @@ class MVC extends Fire
 	 */
 	private function _make($config)
 	{
-		$file = './' . $config['type'] . 's/' . $config['filename'] . '.php';
+		$file = self::$_location . '/' . $config['type'] . 's/' . $config['filename'] . '.php';
 		
 		if (file_exists($file))
 		{
@@ -1149,29 +1557,33 @@ class MVC extends Fire
 			
 			$i = 0;
 			do {
-				echo "Do you want to overwrite ${file}? [Default: y]\n[y/n] ";
-				$_answer = fgets(STDIN);
-				if (trim($_answer) == 'n')
+				fwrite(STDOUT, "Do you want to overwrite ${file} ? [Default: yes]\n[yes/no] ");
+				$_answer = trim(fgets(STDIN));
+				if ($_answer == 'no' || $_answer == 'n')
 				{
-					exit();
+					break;
 				}
-				elseif (trim($_answer) == 'y')
+				elseif ($_answer == 'yes' || $_answer == 'y' || empty($_answer))
 				{
 					$i = 42;
 				}
 				else
 				{
-					echo "I don\'t understand...\n";
+					fwrite(STDOUT, "I don't understand...\n");
 					$i++;
 				}
 				
 			} while ($i < 3);
 			unset($_answer);
 		}
+		else
+		{
+			$i = 42;
+		}
 		
 		if ($i > 3)
 		{
-			if ($fp = @fopen ($file, 'wb'))
+			if (($fp = @fopen ($file, 'wb'))) // NOTE - Here I added a set of parenthesis to stop getting the "Assignment in condition" warning.
 			{
 				flock($fp, LOCK_EX);
 				fwrite($fp, $config['template']);
@@ -1216,6 +1628,7 @@ class MVC extends Fire
 			{
 				$template .= $_action;
 			}
+			
 			return $template;
 		}
 	} // End of _add_actions
@@ -1225,81 +1638,216 @@ class MVC extends Fire
 // ------------------------------------------------------------------------
 // ------------------------------------------------------------------------
 
-/*
-| DEBUG
+/**
+ * A folder scanner.
+ *
+ * @package Fire
+ * @subpackage FolderScanner
+ * @author Aziz Light
+ * @link http://bitbucket.org/azizlight/fire
+ * @link http://github.com/AzizLight/fire
+ * @copyright Copyright (c) 2010, Aziz Light
+ * @license http://www.opensource.org/licenses/mit-license.php MIT License
+ */
+class FolderScanner
+{
+	/**
+	 * Get the current location. Returns the path of the current location
+	 * and the breadcrumbs trail to that location.
+	 *
+	 * @access public
+	 * @static
+	 * @return object
+	 * @author Aziz Light
+	 */
+	public static function get_location()
+	{
+		$location = new stdClass();
+		$location->path = getcwd();
+		$location->dirs = explode('/', $location->path);
+		$location->dirs[0] = '/';
+		
+		return $location;
+	} // End of get_location
+	
+// ------------------------------------------------------------------------
+	
+	/**
+	 * List the files and folders that are in a given directory (by default the current location)
+	 *
+	 * @access public
+	 * @static
+	 * @param string $dir : The directory to scan.
+	 * @return array : The list of files and folders in an array.
+	 * @author Aziz Light
+	 */
+	public static function ls($dir = '')
+	{
+		if (empty($dir))
+			$dir = getcwd();
+		
+		$handle = opendir($dir);
+		$folders = array();
+		while (FALSE !== ($f = readdir($handle)))
+		{
+			if ($f != '.' && $f != '..')
+				$folders[] = $f;
+		}
+		closedir($handle);
+		
+		return $folders;
+	} // End of ls
+	
+// ------------------------------------------------------------------------
+	
+	/**
+	 * Check that the user is either in the root of a CodeIgniter project or in
+	 * the application folder of a CodeIgniter project and returns the path to the
+	 * application folder.
+	 *
+	 * @access public
+	 * @static
+	 * @return bool|string : Returns the path to the application folder or FALSE if it wasn't found.
+	 * @author Aziz Light
+	 */
+	public static function check_location($application_folder = 'application', $system_folder = 'system')
+	{
+		$location = self::get_location();
+		
+		if (!in_array($application_folder, $location->dirs))
+		{
+			$folders = self::ls();
+			if (!in_array($application_folder, $folders))
+			{
+				if (!in_array($system_folder, $folders))
+					return FALSE;
+				
+				$folders = self::ls($system_folder);
+				if (!in_array($application_folder, $folders))
+					return FALSE;
+				
+				return $location->path . '/' . $system_folder . '/' . $application_folder;
+			}
+			
+			return $location->path . '/' . $application_folder;
+		}
+		
+		return $location->path;
+	} // End of check_location
+} // End of FolderScanner
+
+// ------------------------------------------------------------------------
+// ------------------------------------------------------------------------
+
+/**
+* Inflector for pluralize and singularize English nouns.
+* 
+* This Inflector is a port of Ruby on Rails Inflector.
+* 
+* It can be really helpful for developers that want to
+* create frameworks based on naming conventions rather than
+* configurations.
+* 
+* It was ported to PHP for the Akelos Framework, a
+* multilingual Ruby on Rails like framework for PHP that will
+* be launched soon.
+* 
+* Note from Aziz Light:
+*  I modified this class a bit, I actually removed all of its
+*  methods except singularize. I kept the method in the Inflector
+*  class because in the future I might add back some other methods to it.
+* 
+* @author Bermi Ferrer Martinez <bermi akelos com>
+* @copyright Copyright (c) 2002-2006, Akelos Media, S.L. http://www.akelos.org
+* @license GNU Lesser General Public License <http://www.gnu.org/copyleft/lesser.html>
+* @since 0.1
+* @version $Revision 0.1 $
 */
+class Inflector
+{	
+	/**
+	* Singularizes English nouns.
+	* 
+	* @access public
+	* @static
+	* @param string $word : English noun to singularize
+	* @return string : Singular noun.
+	*/
+	public static function singularize($word)
+	{
+		$singular = array(
+			'/(quiz)zes$/i' => '\\1',
+			'/(matr)ices$/i' => '\\1ix',
+			'/(vert|ind)ices$/i' => '\\1ex',
+			'/^(ox)en/i' => '\\1',
+			'/(alias|status)es$/i' => '\\1',
+			'/([octop|vir])i$/i' => '\\1us',
+			'/(cris|ax|test)es$/i' => '\\1is',
+			'/(shoe)s$/i' => '\\1',
+			'/(o)es$/i' => '\\1',
+			'/(bus)es$/i' => '\\1',
+			'/([m|l])ice$/i' => '\\1ouse',
+			'/(x|ch|ss|sh)es$/i' => '\\1',
+			'/(m)ovies$/i' => '\\1ovie',
+			'/(s)eries$/i' => '\\1eries',
+			'/([^aeiouy]|qu)ies$/i' => '\\1y',
+			'/([lr])ves$/i' => '\\1f',
+			'/(tive)s$/i' => '\\1',
+			'/(hive)s$/i' => '\\1',
+			'/([^f])ves$/i' => '\\1fe',
+			'/(^analy)ses$/i' => '\\1sis',
+			'/((a)naly|(b)a|(d)iagno|(p)arenthe|(p)rogno|(s)ynop|(t)he)ses$/i' => '\\1\\2sis',
+			'/([ti])a$/i' => '\\1um',
+			'/(n)ews$/i' => '\\1ews',
+			'/s$/i' => '',
+		);
+		
+		$uncountable = array('equipment', 'information', 'rice', 'money', 'species', 'series', 'fish', 'sheep');
+		
+		$irregular = array(
+			'person' => 'people',
+			'man' => 'men',
+			'child' => 'children',
+			'sex' => 'sexes',
+			'move' => 'moves'
+		);
+		
+		$lowercased_word = strtolower($word);
+		foreach ($uncountable as $_uncountable)
+		{
+			if (substr($lowercased_word, (-1 * strlen($_uncountable))) == $_uncountable)
+			{
+				return $word;
+			}
+		}
+		
+		foreach ($irregular as $_plural => $_singular)
+		{
+			if (preg_match('/(' . $_singular . ')$/i', $word, $arr))
+			{
+				return preg_replace('/(' . $_singular . ')$/i', substr($arr[0], 0, 1) . substr($_plural, 1), $word);
+			}
+		}
+		
+		foreach ($singular as $rule => $replacement)
+		{
+			if (preg_match($rule, $word))
+			{
+				return preg_replace($rule, $replacement, $word);
+			}
+		}
+		return $word;
+	} // End of singularize
+	
+} // End of Inflector
 
-// print_r($argv);
-
-// die();
-
+// ------------------------------------------------------------------------
 // ------------------------------------------------------------------------
 
 // -Query-Validation-------------------------------------------------------
 try {
-	Fire::validate($argv);
+	Fire::init($argv);
 } catch (Exception $e) {
 	exit('ERROR: ' . $e->getMessage() . "\n");
 }
 // ------------------------------------------------------------------------
-
-if ($argv[1] == 'help')
-{
-	Fire::help();
-}
-elseif ($argv[1] == 'ci')
-{
-	$fire = new Ci();
-	$fire->create_project($argv[2]);
-}
-else
-{	
-	$args_count = count($argv);
-	if ($args_count == 2)
-	{
-		$fire = new MVC($argv[1], $argv[2]);
-		$fire->create();
-	}
-	elseif ($args_count > 2)
-	{
-		$fire = new MVC($argv[1], $argv[2]);
-		
-		// NOTE - This is used to keep track of the last type of file created.
-		$last_type = $argv[1];
-		
-		$max = count($argv);
-		for ($i=3; $i < $max; $i++)
-		{
-			switch ($argv[$i])
-			{
-				case 'new':
-					$fire->new_action($argv[$i + 1]);
-					$last_type = 'new';
-					break;
-				case 'controller':
-					$fire->create();
-					$fire = new MVC('controller', $argv[$i + 1]);
-					$last_type = 'controller';
-					break;
-				case 'model':
-					$fire->create();
-					$fire = new MVC('model', $argv[$i + 1]);
-					$last_type = 'model';
-					break;
-				default:
-					if ($last_type == 'new')
-					{
-						$fire->new_action($argv[$i]);
-					}
-					else
-					{
-						$fire->create();
-						$fire = new MVC($last_type, $argv[$i]);
-					}
-					break;
-			}
-		}
-		$fire->create();
-	}
-}
-unset($args_count, $i, $fire);
