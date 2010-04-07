@@ -8,7 +8,7 @@
  * 
  */
 
-error_reporting(E_ALL & E_STRICT);
+// error_reporting(E_ALL & E_STRICT);
 
 /**
 * Master class. Shows the help, contains all the configuration constants and all the static methods.
@@ -920,7 +920,6 @@ class Ci extends Fire
 		{
 			if (!@mkdir($project_path . self::name_of_assets_folder . '/' . $asset, 0755))
 			{
-				// if (!$this->_remove_assets_folder($project_path))
 				if (!$this->_recursive_remove_directory($project_path))
 				{
 					$_error = 'Unable to remove the assets folder...';
