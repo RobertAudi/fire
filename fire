@@ -640,7 +640,7 @@ class Ci extends Fire
 					fwrite(STDOUT, $_question);
 					
 					$_answer = strtolower(trim(fgets(STDIN)));
-					if ($_answer == 'yes' || $_answer = 'y' || (empty($_answer) && $_default_answer == 'yes'))
+					if ($_answer == 'yes' || $_answer == 'y' || (empty($_answer) && $_default_answer == 'yes'))
 					{
 						if (!$this->_create_assets_folders($destination))
 						{
