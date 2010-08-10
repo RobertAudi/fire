@@ -88,6 +88,10 @@ You can create private methods too! All you have to do is prepend an **underscor
 This will create the comments controller and the *_is_spam* private method.
 
 ## Changelog
+
+### 08/10/2010
+* Bug fix: double equal instead of just one (author: [Erik Jansson](http://github.com/Meldanya))
+
 ### 03/20/2010
 * New query syntax to add actions, methods and view files.
 * View files!
@@ -105,3 +109,7 @@ This will create the comments controller and the *_is_spam* private method.
 * New feature: Add public/private actions/methods to new controllers/models.
 * Updated: Better notification system.
 * Soon: Create new CodeIgniter projects.
+
+### Contributers
+
+* [Erik Jansson](http://github.com/Meldanya)
