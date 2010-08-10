@@ -110,6 +110,6 @@ This will create the comments controller and the *_is_spam* private method.
 * Updated: Better notification system.
 * Soon: Create new CodeIgniter projects.
 
-### Contributers
+### Contributors
 
 * [Erik Jansson](http://github.com/Meldanya)
