@@ -1,0 +1,24 @@
+<?php
+
+/**
+* Help class
+*/
+class Help
+{
+    /**
+     * The directory where all the help files are.
+     */
+    const HELP_DIR = "help";
+    
+    // Prevent from instantiating the class.
+    public function __construct()
+    {
+        throw new RuntimeException("The Fire class can not be instantiated");
+    }
+    
+    public static function main()
+    {
+        // FIXME: Get the contents of the file properly!
+        return file_get_contents(BASE_PATH . '/' .self::HELP_DIR . '/main.txt');
+    }
+}

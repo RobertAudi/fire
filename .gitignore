@@ -1,2 +1,4 @@
 .DS_STORE
 .hg*
+bin/fire
+temp/*
