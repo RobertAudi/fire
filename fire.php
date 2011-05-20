@@ -28,10 +28,11 @@ foreach (glob(BASE_PATH . "/classes/*.php") as $php_class)
 
 try
 {
-    Inferno::init($argv);
-    if (Inferno::init($argv))
+    $message = Inferno::init($argv);
+    if ($message)
     {
         // TODO: add a feedback message to tell the user that the file was generated successfully
+        echo $message;
     }
     exit;
 }
@@ -40,21 +41,21 @@ catch (InvalidArgumentException $e)
     if ($e->getCode() == INVALID_TASK_EXCEPTION)
     {
         // TODO: create more help files.
-        echo Inferno::help("main");
+        fwrite(STDOUT, Inferno::help("main"));
         exit;
     }
     elseif ($e->getCode() == INVALID_SUBJECT_EXCEPTION)
     {
-        echo Inferno::help("main");
+        fwrite(STDOUT, Inferno::help("main"));
         exit;
     }
     elseif ($e->getCode() == MISSING_NAME_EXCEPTION)
     {
-        echo "Please enter a name:\n";
+        fwrite(STDOUT, "Please enter a name:\n");
         $name = trim(fgets(STDIN));
         if (empty($name))
         {
-            echo "The name is required!\n";
+            fwrite(STDOUT, "The name is required!\n");
             exit;
         }
         else
@@ -67,14 +68,14 @@ catch (InvalidArgumentException $e)
     else
     {
         //FIXME: Handle this better!
-        echo $e->getMessage() . "\n";
+        fwrite(STDOUT, $e->getMessage() . "\n");
         exit;
     }
 }
 catch (RuntimeException $e)
 {
     //FIXME: Handle this better!
-    echo $e->getMessage() . "\n";
+    fwrite(STDOUT, $e->getMessage() . "\n");
     exit;
 }
 
