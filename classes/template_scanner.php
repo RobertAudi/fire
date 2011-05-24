@@ -63,7 +63,7 @@ class TemplateScanner
      * @return void
      * @author Aziz Light
      */
-    public function __construct($template_name = "", $args = array())
+    public function __construct($template_name = "", array $args = array())
     {
       $this->template_name = $template_name;
       $this->set_attributes($args);
@@ -122,13 +122,8 @@ class TemplateScanner
      * @return void
      * @author Aziz Light
      */
-    private function set_attributes($args)
+    private function set_attributes(array $args)
     {
-        if (empty($args))
-        {
-            throw new InvalidArgumentException("The attributes array can't be empty!");
-        }
-
         $valid_attributes = array(
             "class_name"         => 'My' . ucfirst($this->template_name),
             "parent_class"       => 'CI_' . ucfirst($this->template_name),
