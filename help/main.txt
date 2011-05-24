@@ -6,6 +6,5 @@ Tasks:
 Subjects:
 - controller
 - model
-- view
 
 The task, the subject and the name are all mandatory!
