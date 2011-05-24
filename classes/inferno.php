@@ -66,7 +66,7 @@ class Inferno
 
         // Finally, call and run the command.
         $process = new $command_class($args);
-        return (bool) $process->run();
+        return $process->run();
     }
 
     /**

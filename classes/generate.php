@@ -29,17 +29,11 @@ class Generate
      * @param  array $args : Parsed command line arguments.
      * @author Aziz Light
      */
-    public function __construct($args)
+    public function __construct(array $args)
     {
-        if (!is_array($args))
-        {
-            throw new InvalidArgumentException("The commands take an array as only argument!");
-        }
+        $this->extra = $this->generate_extra($args);
 
-        $this->extra = $this->generate_extra($args["extra"]);
-        unset($args['extra']);
-
-        $this->args  = $args;
+        $this->args = $args;
     }
 
     /**
@@ -52,19 +46,8 @@ class Generate
     public function run()
     {
         $subject = $this->args['subject'];
-        $subject = $this->$subject();
-
-        $location = "";
-        switch ($this->args['subject'])
-        {
-            case 'controller':
-                $location = $this->args["location"] . "/controllers/";
-                break;
-        }
-
-        // Now we need to write the content to a file.
-        $filename = $location . $this->args['filename'];
-        return file_put_contents($filename, $subject);
+        $this->$subject();
+        return;
     }
 
     /**
@@ -77,13 +60,162 @@ class Generate
     private function controller()
     {
         $args = array(
-            "class_name" => $this->args['name'],
-            "filename" => $this->args['filename'],
+            "class_name"         => $this->args['name'],
+            "filename"           => $this->args['filename'],
             "application_folder" => $this->args['application_folder'],
-            "extra" => $this->extra,
+            "parent_class"       => $this->args['parent_controller'],
+            "extra"              => $this->extra,
         );
-        $template = new TemplateScanner("controller", $args);
-        return $template->parse();
+        $template    = new TemplateScanner("controller", $args);
+        $controller  = $template->parse();
+
+        $location = $this->args["location"] . "/controllers/";
+        $filename = $location . $this->args['filename'];
+
+        $message = "\t";
+        if (file_exists($filename))
+        {
+            $message .= 'Controller already exists : ';
+            $message  = ApplicationHelpers::colorize($message, 'light_blue');
+            $message .= $this->args['application_folder'] . '/controllers/' . $this->args['filename'];
+        }
+        elseif (file_put_contents($filename, $controller))
+        {
+            $message .= 'Created controller: ';
+            $message  = ApplicationHelpers::colorize($message, 'green');
+            $message .= $this->args['application_folder'] . '/controllers/' . $this->args['filename'];
+        }
+        else
+        {
+            $message .= 'Unable to create controller: ';
+            $message  = ApplicationHelpers::colorize($message, 'red');
+            $message .= $this->args['application_folder'] . '/controllers/' . $this->args['filename'];
+        }
+
+        fwrite(STDOUT, $message . PHP_EOL);
+
+        // Create the view files.
+        $this->views();
+        return;
+    }
+
+    /**
+     * The method that generates the models
+     *
+     * @access private
+     * @return void
+     * @author Aziz Light
+     */
+    private function model()
+    {
+        $args = array(
+            "class_name"         => $this->args['name'],
+            "filename"           => $this->args['filename'],
+            "application_folder" => $this->args['application_folder'],
+            "parent_class"       => $this->args['parent_model'],
+            "extra"              => $this->extra,
+        );
+        $template = new TemplateScanner("model", $args);
+        $model    = $template->parse();
+
+        $location = $this->args["location"] . "/models/";
+        $filename = $location . $this->args['filename'];
+
+        $message = "\t";
+        if (file_exists($filename))
+        {
+            $message .= 'Model already exists : ';
+            $message  = ApplicationHelpers::colorize($message, 'light_blue');
+            $message .= $this->args['application_folder'] . '/models/' . $this->args['filename'];
+        }
+        elseif (file_put_contents($filename, $model))
+        {
+            $message .= 'Created model: ';
+            $message  = ApplicationHelpers::colorize($message, 'green');
+            $message .= $this->args['application_folder'] . '/models/' . $this->args['filename'];
+        }
+        else
+        {
+            $message .= 'Unable to create model: ';
+            $message  = ApplicationHelpers::colorize($message, 'red');
+            $message .= $this->args['application_folder'] . '/models/' . $this->args['filename'];
+        }
+
+        fwrite(STDOUT, $message . PHP_EOL);
+        return;
+    }
+
+    /**
+     * Creates the view files and the views folder if necessary.
+     *
+     * @access private
+     * @return bool
+     */
+    private function views()
+    {
+        $controller = $this->args['name'];
+        $views = (array_key_exists('extra', $this->args)) ? $this->args['extra'] : array();
+
+        if (empty($views))
+        {
+            return true;
+        }
+
+        // Check that the views folder exists and create it if it doesn't
+        $views_folder = $this->args['application_folder'] . '/views/' . $controller;
+        $location = $this->args['location'] . '/views/' . $controller;
+        if (!file_exists($location) || !is_dir($location))
+        {
+            $message = "\t";
+            if (mkdir($location, 0755))
+            {
+                $message .= 'Created folder: ';
+                $message  = ApplicationHelpers::colorize($message, 'green') . $views_folder;
+                fwrite(STDOUT, $message . PHP_EOL);
+                unset($message);
+            }
+            else
+            {
+                $message .= 'Unable to create folder: ';
+                $message  = ApplicationHelpers::colorize($message, 'red') . $views_folder;
+                fwrite(STDOUT, $message . PHP_EOL);
+                return false;
+            }
+        }
+
+        // Create the views
+        foreach ($views as $view)
+        {
+            // First check that the views doesn't already exist
+            if (file_exists($location . '/' . $view . '.php'))
+            {
+                $message = "\tView already exists: ";
+                $message = ApplicationHelpers::colorize($message, 'light_blue') . $views_folder . '/' . $view . '.php';
+                fwrite(STDOUT, $message . PHP_EOL);
+                unset($message);
+                continue;
+            }
+
+            $content  = '<h1>' . $controller . '#' . $view . '</h1>';
+            $content .= PHP_EOL . '<p>Find me in ' . $views_folder . '/' . $view . '.php</p>';
+
+            $message = "\t";
+            if (file_put_contents($location . '/' . $view . '.php', $content))
+            {
+                $message .= 'Created view: ';
+                $message  = ApplicationHelpers::colorize($message, 'green') . $views_folder . '/' . $view . '.php';
+            }
+            else
+            {
+                $message .= 'Unable to create view ';
+                $message  = ApplicationHelpers::colorize($message, 'red') . $views_folder . '/' . $view . '.php';
+            }
+
+            fwrite(STDOUT, $message . PHP_EOL);
+            unset($message);
+        }
+
+        return true;
     }
 
     /**
@@ -95,20 +227,22 @@ class Generate
      * @return string : The generated extra stuff.
      * @author Aziz Light
      */
-    private function generate_extra($args)
+    private function generate_extra(array $args)
     {
-        if (!is_array($args))
+        $extra = "";
+
+        if (!array_key_exists('extra', $args) || !is_array($args['extra']) || empty($args['extra']))
         {
-            throw new InvalidArgumentException("Invalid argument. An array should be passed.");
+            return $extra;
         }
 
-        $extra = "";
-        foreach ($args as $arg)
+        foreach ($args['extra'] as $arg)
         {
-            $args = array(
+            $arguments = array(
+                "class_name" => $args['name'],
                 "extra" => $arg
             );
-            $template = new TemplateScanner("extra", $args);
+            $template = new TemplateScanner("extra", $arguments);
             $extra   .= $template->parse();
         }
         return $extra;
