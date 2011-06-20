@@ -54,10 +54,11 @@ class Generate
      * The method that generates the controller
      *
      * @access private
+     * @param array $force_views_creation : Should the method force the creation of views? Used in the scaffold method.
      * @return string
      * @author Aziz Light
      */
-    private function controller()
+    private function controller($force_views_creation = false)
     {
         $args = array(
             "class_name"         => $this->args['name'],
@@ -92,10 +93,20 @@ class Generate
             $message .= $this->args['application_folder'] . '/controllers/' . $this->args['filename'];
         }
 
-        fwrite(STDOUT, $message . PHP_EOL);
 
-        // Create the view files.
-        $this->views();
+
+        if ($force_views_creation === true || $this->should_we_generate_views())
+        {
+            fwrite(STDOUT, $message . PHP_EOL);
+
+            // Create the view files.
+            $this->views();
+        }
+        else
+        {
+            fwrite(STDOUT, $message . PHP_EOL);
+        }
+
         return;
     }
 
@@ -216,6 +227,38 @@ class Generate
         }
 
         return true;
+    }
+
+    private function scaffold()
+    {
+        if (isset($this->args['extras']))
+        {
+            $message = "The following arguments were ignored: ";
+            fwrite(STDOUT, ApplicationHelpers::colorize($message, 'red') . implode(", ", $this->args['extra']) . PHP_EOL);
+            unset($this->args['extra']);
+        }
+
+        $this->args['extra'] = array('index', 'create', 'view', 'edit', 'delete');
+
+        $this->controller(true);
+
+        $this->model();
+    }
+
+    /**
+     * Asks the user if he wants to generate views
+     * Any response starting with the letter "Y" (case-insensitive)
+     * is considered positive. Any other response is considered negative.
+     *
+     * @access private
+     * @return bool
+     */
+    private function should_we_generate_views()
+    {
+        fwrite(STDOUT, 'Do you want to create views? ');
+        $generate_views = trim(fgets(STDIN));
+
+        return strncasecmp($generate_views, 'y', 1) === 0;
     }
 
     /**

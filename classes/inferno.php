@@ -19,7 +19,7 @@ class Inferno
      * @var array
      * @author Aziz Light
      */
-    private static $valid_subjects = array('controller', 'model', 'view');
+    private static $valid_subjects = array('controller', 'model', 'scaffold');
 
     // Prevent from instantiating the class.
     function __construct()
