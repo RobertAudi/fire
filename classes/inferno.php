@@ -129,8 +129,9 @@ class Inferno
         }
         else
         {
-            $parsed_args['name'] = array_shift($args);
-            $parsed_args['filename'] = ApplicationHelpers::underscorify($parsed_args['name']) . ".php";
+            $unparsed_name = array_shift($args);
+            $parsed_args['name'] = end(explode(DIRECTORY_SEPARATOR, $unparsed_name));
+            $parsed_args['filename'] = ApplicationHelpers::underscorify($unparsed_name) . ".php";
         }
 
         if (!empty($args))
