@@ -130,7 +130,10 @@ class Inferno
         else
         {
             $unparsed_name = array_shift($args);
-            $parsed_args['name'] = end(explode(DIRECTORY_SEPARATOR, $unparsed_name));
+
+            // NOTE: I have to use this $tmp variable in order to avoid getting a "Stict Standards" notice by php
+            $tmp = explode(DIRECTORY_SEPARATOR, $unparsed_name);
+            $parsed_args['name'] = end($tmp);
             $parsed_args['filename'] = ApplicationHelpers::underscorify($unparsed_name) . ".php";
         }
 
