@@ -58,7 +58,7 @@ class Generate
      * @return string
      * @author Aziz Light
      */
-    private function controller($force_views_creation = false)
+    private function controller()
     {
         $args = array(
             "class_name"         => $this->args['name'],
@@ -93,19 +93,11 @@ class Generate
             $message .= $this->args['application_folder'] . '/controllers/' . $this->args['filename'];
         }
 
+        // The controller has been generated, output the confirmation message
+        fwrite(STDOUT, $message . PHP_EOL);
 
-
-        if ($force_views_creation === true || $this->should_we_generate_views())
-        {
-            fwrite(STDOUT, $message . PHP_EOL);
-
-            // Create the view files.
-            $this->views();
-        }
-        else
-        {
-            fwrite(STDOUT, $message . PHP_EOL);
-        }
+        // Create the view files.
+        $this->views();
 
         return;
     }
@@ -243,22 +235,6 @@ class Generate
         $this->controller(true);
 
         $this->model();
-    }
-
-    /**
-     * Asks the user if he wants to generate views
-     * Any response starting with the letter "Y" (case-insensitive)
-     * is considered positive. Any other response is considered negative.
-     *
-     * @access private
-     * @return bool
-     */
-    private function should_we_generate_views()
-    {
-        fwrite(STDOUT, 'Do you want to create views? ');
-        $generate_views = trim(fgets(STDIN));
-
-        return strncasecmp($generate_views, 'y', 1) === 0;
     }
 
     /**
