@@ -14,6 +14,14 @@ class Inferno
     private static $valid_tasks = array('generate');
 
     /**
+     * List of valid command aliases and their corresponding command
+     *
+     * @var array
+     * @author Aziz Light
+     */
+    private static $valid_aliases = array('g' => 'generate');
+
+    /**
      * List of valid subjects
      *
      * @var array
@@ -108,7 +116,18 @@ class Inferno
         }
         else
         {
-            throw new InvalidArgumentException("Invalid task", INVALID_TASK_EXCEPTION);
+            $args[0] = self::check_and_get_command_alias($args[0]);
+            if (empty($args[0]))
+            {
+                throw new InvalidArgumentException("Invalid task", INVALID_TASK_EXCEPTION);
+            }
+            else
+            {
+                # FIXME: Try to remove the duplication here.
+                # NOTE: This is a good case for a goto: :-{)
+                $parsed_args['command'] = $args[0];
+                array_shift($args);
+            }
         }
 
         // TODO: Find a better name than "subject"
@@ -145,4 +164,18 @@ class Inferno
         return $parsed_args;
     }
 
+    /**
+     * Check if the given alias is valid.
+     * If it is, return the corresponding command,
+     * otherwise return an empty string.
+     *
+     * @param string $alias An alias
+     * @return string The corresponding command
+     * @access private
+     * @author Aziz Light
+     */
+    private static function check_and_get_command_alias($alias)
+    {
+        return (array_key_exists($alias, self::$valid_aliases)) ? self::$valid_aliases[$alias] : "";
+    }
 }
