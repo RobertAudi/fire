@@ -173,8 +173,8 @@ class Generate
         }
 
         // Check that the views folder exists and create it if it doesn't
-        $views_folder = $this->args['application_folder'] . '/views/' . $controller;
-        $location = $this->args['location'] . '/views/' . $controller;
+        $views_folder = $this->args['application_folder'] . '/views/' . strtolower($controller);
+        $location = $this->args['location'] . '/views/' . strtolower($controller);
         if (!file_exists($location) || !is_dir($location))
         {
             $message = "\t";
