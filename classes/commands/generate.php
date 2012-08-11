@@ -3,7 +3,7 @@
 /**
 * Generate task
 */
-class Generate
+class Generate extends BaseCommand
 {
     /**
      * Arguments passed to the constructor.
