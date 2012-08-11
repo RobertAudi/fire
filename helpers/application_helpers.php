@@ -118,7 +118,7 @@ class ApplicationHelpers
      * @author alcuadrado on StackOverflow
      * @link http://stackoverflow.com/questions/3349753/php-delete-directory-with-files-in-it#answer-3349792
      */
-    public static function delete_git_dir($dir)
+    public static function delete_dir($dir)
     {
         $it = new RecursiveDirectoryIterator($dir);
         $files = new RecursiveIteratorIterator($it, RecursiveIteratorIterator::CHILD_FIRST);

@@ -41,6 +41,15 @@ class NewProject extends BaseCommand
     private $force_clone;
 
     /**
+     * Tag or branch to checkout before the git repo is deleted
+     *
+     * @access private
+     * @var string
+     * @author Aziz Light
+     */
+    private $tag_or_branch;
+
+    /**
      * El Constructor!
      *
      * @access public
@@ -50,8 +59,10 @@ class NewProject extends BaseCommand
     public function __construct(array $args)
     {
         $this->name = $args['name'];
+        // FIXME: This will not work if the user passes an absolute path
         $this->location = getcwd() . DIRECTORY_SEPARATOR . $args['name'];
         $this->force_clone = !empty($args['force_clone']);
+        $this->tag_or_branch = (array_key_exists('tag_or_branch', $args)) ? $args['tag_or_branch'] : "";
 
         // If fire is not bootstrapped, then we need to get CodeIgniter from the Inter-Webs
         if (!$this->is_fire_bootstrapped() || $this->force_clone == TRUE)
@@ -92,7 +103,7 @@ class NewProject extends BaseCommand
             fwrite(STDOUT, "Cloning CodeIgniter...\n");
 
             // First let's download CodeIgniter
-            if (GithubHelpers::git_clone($this->repo, $this->location) === FALSE)
+            if (GithubHelpers::git_clone($this->repo, $this->location, $this->tag_or_branch) === FALSE)
             {
                 throw new RuntimeException("Unable to clone CodeIgniter from Github");
             }
