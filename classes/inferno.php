@@ -11,7 +11,7 @@ class Inferno
      * @var array
      * @author Aziz Light
      */
-    private static $valid_tasks = array('generate', 'new_project');
+    private static $valid_tasks = array('generate', 'new_project', 'bootstrap');
 
     /**
      * List of valid command aliases and their corresponding command
@@ -21,6 +21,9 @@ class Inferno
      */
     private static $valid_aliases = array('g' => 'generate',
                                           'new' => 'new_project');
+
+
+    private static $commands_with_no_subjects = array('new_project', 'bootstrap');
 
     /**
      * List of valid subjects
@@ -47,6 +50,7 @@ class Inferno
         // Parse the arguments
         $args = self::parse($args);
 
+        // FIXME: Move this to the new command, it doesn't belong here
         if ($args['command'] == 'new_project')
         {
             if (is_dir(getcwd() . DIRECTORY_SEPARATOR . $args['name']))
@@ -56,12 +60,18 @@ class Inferno
 
             $location = __DIR__ . DIRECTORY_SEPARATOR . $args['name'];
         }
-        else
+        else if ($args['command'] != 'bootstrap')
         {
             $location = FolderScanner::check_location();
         }
+        else
+        {
+            // FIXME: Find a better solution
+            // Set the location so that we don't get errors
+            $location = "";
+        }
 
-        if (!$location)
+        if ($args['command'] != 'bootstrap' && !$location)
         {
             $error_message  = "No CodeIgniter project detected at your location.\n"
                             . "You must either be in the root or the application folder"
@@ -157,7 +167,8 @@ class Inferno
             throw new InvalidArgumentException("Invalid subject", INVALID_SUBJECT_EXCEPTION);
         }
 
-        if (empty($args))
+        // The bootstrap command is the only one that is called without any additional args
+        if ($parsed_args['command'] != 'bootstrap' && empty($args))
         {
             throw new InvalidArgumentException("Missing name", MISSING_NAME_EXCEPTION);
         }
@@ -209,7 +220,6 @@ class Inferno
      */
     private static function has_subjects($command)
     {
-        $commands_with_no_subjects = array('new_project');
-        return !in_array($command, $commands_with_no_subjects);
+        return !in_array($command, self::$commands_with_no_subjects);
     }
 }
