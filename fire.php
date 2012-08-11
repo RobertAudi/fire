@@ -21,9 +21,19 @@ define('BASE_PATH', __DIR__);
 require_once "config/constants.php";
 require_once "helpers/application_helpers.php";
 
+// Load all the classes dynamically
 foreach (glob(BASE_PATH . "/classes/*.php") as $php_class)
 {
     require_once $php_class;
+}
+
+// Load the base command since every command extend it
+require_once BASE_PATH . "/classes/commands/base_command.php";
+
+// Lazy-load the commands
+function __autoload($command)
+{
+    require_once BASE_PATH . '/classes/commands/' . ApplicationHelpers::underscorify($command) . '.php';
 }
 
 try
