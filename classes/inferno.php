@@ -11,7 +11,7 @@ class Inferno
      * @var array
      * @author Aziz Light
      */
-    private static $valid_tasks = array('generate');
+    private static $valid_tasks = array('generate', 'new_project');
 
     /**
      * List of valid command aliases and their corresponding command
@@ -19,7 +19,8 @@ class Inferno
      * @var array
      * @author Aziz Light
      */
-    private static $valid_aliases = array('g' => 'generate');
+    private static $valid_aliases = array('g' => 'generate',
+                                          'new' => 'new_project');
 
     /**
      * List of valid subjects
@@ -30,20 +31,36 @@ class Inferno
     private static $valid_subjects = array('controller', 'model', 'scaffold');
 
     // Prevent from instantiating the class.
-    function __construct()
+    public function __construct()
     {
         throw new RuntimeException("The Fire class can not be instantiated");
     }
 
     // TODO: add documentation
-    public static function init($args)
+    public static function init(array $args)
     {
         if (!is_array($args))
         {
             throw new InvalidArgumentException('Argument 1 passed to Inferno::init() must be an array');
         }
 
-        $location = FolderScanner::check_location();
+        // Parse the arguments
+        $args = self::parse($args);
+
+        if ($args['command'] == 'new_project')
+        {
+            if (is_dir(getcwd() . DIRECTORY_SEPARATOR . $args['name']))
+            {
+                throw new InvalidArgumentException('A folder with the same name already exists');
+            }
+
+            $location = __DIR__ . DIRECTORY_SEPARATOR . $args['name'];
+        }
+        else
+        {
+            $location = FolderScanner::check_location();
+        }
+
         if (!$location)
         {
             $error_message  = "No CodeIgniter project detected at your location.\n"
@@ -52,9 +69,6 @@ class Inferno
 
             throw new RuntimeException($error_message);
         }
-
-        // Parse the arguments
-        $args = self::parse($args);
 
         // FIXME: Make this more generic
         // Get the config
@@ -67,7 +81,8 @@ class Inferno
         $args = array_merge($config, $args);
 
         // Example: new Generate()
-        $command_class = ucfirst(strtolower($args['command']));
+        // Example: new NewCommand()
+        $command_class = ApplicationHelpers::camelize($args['command']);
 
         // Remove the command from the array.
         unset($args["command"]);
@@ -137,7 +152,7 @@ class Inferno
             $parsed_args['subject'] = $args[0];
             array_shift($args);
         }
-        else
+        else if(self::has_subjects($parsed_args['command']))
         {
             throw new InvalidArgumentException("Invalid subject", INVALID_SUBJECT_EXCEPTION);
         }
@@ -153,7 +168,12 @@ class Inferno
             // NOTE: I have to use this $tmp variable in order to avoid getting a "Stict Standards" notice by php
             $tmp = explode(DIRECTORY_SEPARATOR, $unparsed_name);
             $parsed_args['name'] = end($tmp);
-            $parsed_args['filename'] = ApplicationHelpers::underscorify($unparsed_name) . ".php";
+
+            if ($parsed_args['command'] != 'new_project')
+            {
+                $parsed_args['filename'] = ApplicationHelpers::underscorify($unparsed_name) . ".php";
+            }
+
         }
 
         if (!empty($args))
@@ -177,5 +197,19 @@ class Inferno
     private static function check_and_get_command_alias($alias)
     {
         return (array_key_exists($alias, self::$valid_aliases)) ? self::$valid_aliases[$alias] : "";
+    }
+
+    /**
+     * Checks if a commands has subjects
+     *
+     * @param string $command The command
+     * @return bool Wheter or not the command has subjects
+     * @access private
+     * @author Aziz Light
+     */
+    private static function has_subjects($command)
+    {
+        $commands_with_no_subjects = array('new_project');
+        return !in_array($command, $commands_with_no_subjects);
     }
 }

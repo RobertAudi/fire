@@ -31,6 +31,21 @@ class ApplicationHelpers
     }
 
     /**
+     * Takes a string that has words seperated by underscores and turns it into
+     * a CamelCased string.
+     *
+     * @param   string  the underscored word
+     * @return  string  the CamelCased version of $underscoredWord
+     *
+     * @license    MIT License
+     * @copyright  2010 - 2012 Fuel Development Team
+     */
+    public static function camelize($underscoredWord)
+    {
+        return preg_replace('/(^|_)(.)/e', "strtoupper('\\2')", strval($underscoredWord));
+    }
+
+    /**
      * Add some bash colors to a string.
      *
      * @param string $string      The string that will be colorized.
@@ -92,6 +107,39 @@ class ApplicationHelpers
         $colored_string .= $string . "\033[0m";
 
         return $colored_string;
+    }
+
+    /**
+     * Delete a directory and its contents
+     *
+     * @access private
+     * @param string $dir The directory to delete
+     * @return void
+     * @author alcuadrado on StackOverflow
+     * @link http://stackoverflow.com/questions/3349753/php-delete-directory-with-files-in-it#answer-3349792
+     */
+    public static function delete_git_dir($dir)
+    {
+        $it = new RecursiveDirectoryIterator($dir);
+        $files = new RecursiveIteratorIterator($it, RecursiveIteratorIterator::CHILD_FIRST);
+
+        // empty the directory
+        foreach($files as $file)
+        {
+            if ($file->isDir())
+            {
+                rmdir($file->getRealPath());
+            }
+            else
+            {
+                unlink($file->getRealPath());
+            }
+        }
+
+        // delete the .git directory
+        rmdir($dir);
+
+        return;
     }
 }
 
