@@ -32,6 +32,15 @@ class NewProject extends BaseCommand
     private $repo;
 
     /**
+     * Wether or not to force the command to clone
+     * from Github every single time
+     *
+     * @access private
+     * @var boolean
+     */
+    private $force_clone;
+
+    /**
      * El Constructor!
      *
      * @access public
@@ -42,9 +51,10 @@ class NewProject extends BaseCommand
     {
         $this->name = $args['name'];
         $this->location = getcwd() . DIRECTORY_SEPARATOR . $args['name'];
+        $this->force_clone = !empty($args['force_clone']);
 
         // If fire is not bootstrapped, then we need to get CodeIgniter from the Inter-Webs
-        if (!$this->is_fire_bootstrapped())
+        if (!$this->is_fire_bootstrapped() || $this->force_clone == TRUE)
         {
             $this->repo = 'git://github.com/' . $args['github_repo'] . '.git';
 
@@ -66,7 +76,7 @@ class NewProject extends BaseCommand
      **/
     public function run()
     {
-        if ($this->is_fire_bootstrapped())
+        if ($this->is_fire_bootstrapped() && $this->force_clone === FALSE)
         {
             if ($this->copy_codeigniter_sample_project($this->location, BASE_PATH . '/codeigniter'))
             {
@@ -79,6 +89,8 @@ class NewProject extends BaseCommand
         }
         else
         {
+            fwrite(STDOUT, "Cloning CodeIgniter...\n");
+
             // First let's download CodeIgniter
             if (GithubHelpers::git_clone($this->repo, $this->location) === FALSE)
             {
