@@ -8,28 +8,42 @@ class Inferno
     /**
      * List of valid arguments
      *
+     * @access private
      * @var array
-     * @author Aziz Light
      */
     private static $valid_tasks = array('generate', 'new_project', 'bootstrap');
 
     /**
      * List of valid command aliases and their corresponding command
      *
+     * @access private
      * @var array
-     * @author Aziz Light
      */
     private static $valid_aliases = array('g' => 'generate',
                                           'new' => 'new_project');
 
-
+    /**
+     * List of commands that take no subject
+     *
+     * @access private
+     * @var array
+     */
     private static $commands_with_no_subjects = array('new_project', 'bootstrap');
+
+    /**
+     * List of valid column types supported by fire
+     *
+     * @access private
+     * @var array
+     */
+    private static $valid_column_types = array('string', 'varchar', 'text', 'int', 'integer', 'decimal',
+                                                'date', 'datetime', 'char');
 
     /**
      * List of valid subjects
      *
+     * @access private
      * @var array
-     * @author Aziz Light
      */
     private static $valid_subjects = array('controller', 'model', 'scaffold');
 
@@ -189,7 +203,14 @@ class Inferno
 
         if (!empty($args))
         {
-            $parsed_args['extra'] = $args;
+            if (in_array($parsed_args['subject'], array('model', 'migration')))
+            {
+                $parsed_args['extra'] = self::parse_table_columns($args);
+            }
+            else
+            {
+                $parsed_args['extra'] = $args;
+            }
         }
 
         return $parsed_args;
@@ -221,5 +242,83 @@ class Inferno
     private static function has_subjects($command)
     {
         return !in_array($command, self::$commands_with_no_subjects);
+    }
+
+    /**
+     * Parse the table columns and set their attributes
+     *
+     * @access private
+     * @param array $columns The list of table columns
+     * @return array The table columns with their attributes
+     * @author Aziz Light
+     **/
+    private static function parse_table_columns(array $columns)
+    {
+        $parsed_columns = array();
+
+        foreach ($columns as $column)
+        {
+            $c = explode(':', $column);
+
+            if (sizeof($c) != 2)
+            {
+                throw new RuntimeException('You did not specify the type of the ' . $c[0] . ' column');
+            }
+            else if (!in_array($c[1], self::$valid_column_types))
+            {
+                throw new InvalidArgumentException('You geve an invalid type to the ' . $c[0] . ' column');
+            }
+
+            $parsed_columns[$c[0]] = self::generate_column_attributes($c[1]);
+        }
+
+        return $parsed_columns;
+    }
+
+    /**
+     * Generate the default attributes for a specified column type
+     *
+     * @access private
+     * @param string $type The type of the column
+     * @return array The default attributes for the specified column type
+     * @author Aziz Light
+     **/
+    private static function generate_column_attributes($type)
+    {
+        $attributes = array();
+
+        switch ($type)
+        {
+            case 'string':
+            case 'varchar':
+                $attributes['type'] = 'VARCHAR';
+                $attributes['null'] = FALSE;
+                break;
+            case 'text':
+                $attributes['type'] = 'TEXT';
+                break;
+            case 'int':
+            case 'integer':
+                $attributes['type'] = 'INT';
+                $attributes['unsigned'] = TRUE;
+                $attributes['null'] = FALSE;
+                break;
+            case 'decimal':
+                $attributes['type'] = 'DECIMAL';
+                $attributes['unsigned'] = TRUE;
+                $attributes['null'] = FALSE;
+                break;
+            case 'date':
+                $attributes['type'] = 'DATE';
+                break;
+            case 'datetime':
+                $attributes['type'] = 'DATETIME';
+                break;
+            case 'char':
+                $attributes['type'] = 'CHAR';
+                break;
+        }
+
+        return $attributes;
     }
 }

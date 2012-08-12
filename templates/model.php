@@ -5,15 +5,13 @@
  */
 class {{class_name}} extends {{parent_class}}
 {
-
     /**
-     * The Contructor!
+     * El Contructor!
      */
     public function __construct()
     {
       parent::__construct();
     }
-{{extra}}
 } // End of the {{class_name}}
 
 /* End of file {{filename}} */

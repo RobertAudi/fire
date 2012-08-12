@@ -1,5 +1,5 @@
 
     public function {{extra}}()
     {
-        $this->load->view('{{class_name}}/{{extra}}');
+        $this->load->view('{{view_folder}}/{{extra}}');
     }

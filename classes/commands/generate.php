@@ -112,7 +112,7 @@ class Generate extends BaseCommand
     private function model()
     {
         $args = array(
-            "class_name"         => $this->args['name'],
+            "class_name"         => ucfirst(strtolower($this->args['name'])),
             "filename"           => $this->args['filename'],
             "application_folder" => $this->args['application_folder'],
             "parent_class"       => $this->args['parent_model'],
@@ -145,6 +145,10 @@ class Generate extends BaseCommand
         }
 
         fwrite(STDOUT, $message . PHP_EOL);
+
+        // Create the migration for the new model
+        $this->migration();
+
         return;
     }
 
@@ -221,6 +225,7 @@ class Generate extends BaseCommand
         return true;
     }
 
+    // FIXME: Document this bitch!
     private function scaffold()
     {
         if (isset($this->args['extras']))
@@ -238,33 +243,245 @@ class Generate extends BaseCommand
     }
 
     /**
-     * Generate the extra stuff that will go in the controller or model.
-     * That is, methods and actions.
+     * Create a migration file
      *
      * @access private
-     * @param  array $args : Extra stuff to generate.
-     * @return string : The generated extra stuff.
+     * @return void
+     * @author Aziz Light
+     **/
+    private function migration()
+    {
+        $location = $this->args['location'] . '/migrations/';
+        if (!is_dir($location))
+        {
+            mkdir($location);
+        }
+
+        $backtrace = debug_backtrace();
+        $calling_function = $backtrace[1]['function'];
+
+        if ($calling_function === "model")
+        {
+            $args = array(
+                'class_name'         => 'Migration_Add_' . $this->args['name'],
+                'table_name'         => strtolower($this->args['name']),
+                'filename'           => 'add_' . $this->args['filename'],
+                'application_folder' => $this->args['application_folder'],
+                'parent_class'       => $this->args['parent_migration'],
+                'extra'              => $this->extra
+            );
+        }
+        else
+        {
+            // TODO: Create an args array for plain migrations
+        }
+
+        $template  = new TemplateScanner('migration', $args);
+        $migration = $template->parse();
+
+        $migration_number = $this->get_migration_number();
+        $filename = $location . $migration_number . '_' . $this->args['filename'];
+        $potential_duplicate_migration_filename = $this->decrement_migration_number($migration_number) . '_' . $this->args['filename'];
+        $potential_duplicate_migration = $location . $potential_duplicate_migration_filename;
+
+        $message = "\t";
+        if (file_exists($potential_duplicate_migration))
+        {
+            $message .= 'Migration already exists : ';
+            $message  = ApplicationHelpers::colorize($message, 'light_blue');
+            $message .= $this->args['application_folder'] . '/migrations/' . $potential_duplicate_migration_filename;
+        }
+        else if (file_put_contents($filename, $migration) && $this->add_migration_number_to_config_file($migration_number))
+        {
+            $message .= 'Created Migration: ';
+            $message  = ApplicationHelpers::colorize($message, 'green');
+            $message .= $this->args['application_folder'] . '/migrations/' . $migration_number . '_' . $this->args['filename'];
+        }
+        else
+        {
+            $message .= 'Unable to create migration: ';
+            $message  = ApplicationHelpers::colorize($message, 'red');
+            $message .= $this->args['application_folder'] . '/migrations/' . $migration_number . '_' . $this->args['filename'];
+        }
+
+        fwrite(STDOUT, $message . PHP_EOL);
+
+        return;
+    }
+
+    /**
+     * Generate the extra content that goes
+     * in the main template depending on the
+     * subject (controller, model or migration)
+     *
+     * @access private
+     * @param array $args The parsed command line arguments
+     * return string The extra code to inject into the main template
      * @author Aziz Light
      */
     private function generate_extra(array $args)
     {
-        $extra = "";
-
         if (!array_key_exists('extra', $args) || !is_array($args['extra']) || empty($args['extra']))
         {
-            return $extra;
+            $extra = '';
+        }
+        else
+        {
+            switch ($args['subject'])
+            {
+                case 'controller':
+                    $extra = $this->generate_controller_actions($args['name'], $args['extra']);
+                    break;
+                case 'model':
+                    $extra = $this->generate_migration_statement($args['name'], $args['extra']);
+                    break;
+                case 'migration':
+                    $extra = $this->generate_migration_statement($args['name'], $args['extra']);
+                    break;
+            }
         }
 
-        foreach ($args['extra'] as $arg)
+        return $extra;
+    }
+
+    /**
+     * Generate the actions that will go in the controller.
+     *
+     * @access private
+     * @param string $class_name : The name of the controller
+     * @param  array $args : The list of actions to generate
+     * @return string : The generated actions
+     * @author Aziz Light
+     */
+    private function generate_controller_actions($class_name, array $actions)
+    {
+        $extra = "";
+
+        foreach ($actions as $action)
         {
-            $arguments = array(
-                "class_name" => $args['name'],
-                "extra" => $arg
+            $args = array(
+                "class_name" => $class_name,
+                "extra" => $action
             );
-            $template = new TemplateScanner("extra", $arguments);
+            $template = new TemplateScanner("actions", $args);
             $extra   .= $template->parse();
+            unset($args, $template);
         }
         return $extra;
     }
 
+    /**
+     * Generate the body the the migration that will be generated
+     *
+     * @access private
+     * @param string $class_name The name of the model
+     * @param array $columns The list of columns with their attributes
+     * @return string The migration's body
+     * @author Aziz Light
+     **/
+    private function generate_migration_statement($class_name, array $columns)
+    {
+        $extra = '';
+
+        foreach ($columns as $column => $attrs)
+        {
+            $args = array();
+            $args['column_name'] = $column;
+
+            foreach ($attrs as $attr => $value)
+            {
+                $args['column_' . $attr] = $value;
+            }
+
+            $template = new TemplateScanner('migration_column', $args);
+            $extra .= $template->parse();
+        }
+
+        return $extra;
+    }
+
+    /**
+     * Get the number of the migration by looking at the existing migrations
+     *
+     * @access private
+     * @return string The number of the migration number in the format 001
+     * @author Aziz Light
+     **/
+    private function get_migration_number()
+    {
+        $migrations = glob($this->args['location'] . '/migrations/*.php');
+        $tmp = end($migrations);
+        $tmp = explode(DIRECTORY_SEPARATOR, $tmp);
+        $migration = end($tmp);
+        $migration_number = intval($migration);
+        $migration_number++;
+
+        if ($migration_number < 10)
+        {
+            $migration_number = '00' . $migration_number;
+        }
+        else if ($migration_number < 100)
+        {
+            $migration_number = '0' . $migration_number;
+        }
+        else
+        {
+            $migration_number = strval($migration_number);
+        }
+
+        return $migration_number;
+    }
+
+    /**
+     * This method is used in the process of verifying if a migration
+     * already exists.
+     *
+     * @access private
+     * @param string $migration_number A migration number in the form 001
+     * @return string Decremented migration number
+     * @author Aziz Light
+     **/
+    private function decrement_migration_number($migration_number)
+    {
+        $migration_number = intval($migration_number);
+        $migration_number--;
+
+        if ($migration_number < 10)
+        {
+            $migration_number = '00' . $migration_number;
+        }
+        else if ($migration_number < 100)
+        {
+            $migration_number = '0' . $migration_number;
+        }
+        else
+        {
+            $migration_number = strval($migration_number);
+        }
+
+        return $migration_number;
+    }
+
+    /**
+     * This method adds the migration number to the config file
+     *
+     * @access private
+     * @param string $migration_number The number of the migration in the form 001
+     * @return bool Wether or not the migration number was added to the config file
+     * @author Aziz Light
+     **/
+    private function add_migration_number_to_config_file($migration_number)
+    {
+        $config_file = $this->args['location'] . '/config/migration.php';
+        if (is_file($config_file))
+        {
+            $config_file_contents = file_get_contents($config_file);
+            $config_file_contents = preg_replace('/\$config\[\'migration_version\'\] = \d+;/', '$config[\'migration_version\'] = ' . intval($migration_number) . ';', $config_file_contents, -1, $count);
+            return TRUE;
+        }
+        else
+        {
+            return FALSE;
+        }
+    }
 }

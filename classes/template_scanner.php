@@ -22,6 +22,15 @@ class TemplateScanner
     private $class_name;
 
     /**
+     * The name of the table to migrate.
+     * Used with migrations only.
+     *
+     * @access private
+     * @var string
+     */
+    private $table_name;
+
+    /**
      * The name of the class that will extend the generated class.
      * Example: CI_Controller
      *
@@ -65,8 +74,8 @@ class TemplateScanner
      */
     public function __construct($template_name = "", array $args = array())
     {
-      $this->template_name = $template_name;
-      $this->set_attributes($args);
+        $this->template_name = $template_name;
+        $this->set_attributes($args);
     }
 
     public function parse()
@@ -77,17 +86,20 @@ class TemplateScanner
             $patterns = array(
               "/{{class_name}}/",
               "/{{parent_class}}/",
+              "/{{view_folder}}/",
               "/{{extra}}/",
               "/{{filename}}/",
+              "/{{table_name}}/",
               "/{{application_folder}}/",
             );
 
-            // ugly
             $replacements = array(
               $this->class_name,
               $this->parent_class,
+   strtolower($this->class_name),
               $this->extra,
               $this->filename,
+              $this->table_name,
               $this->application_folder,
             );
             return preg_replace($patterns, $replacements, $template);
@@ -117,32 +129,82 @@ class TemplateScanner
     /**
      * Set the template attributes as properties.
      *
-     * @param mixed $args : Array of attributes passed to the constructor.
+     * @param array $args : Array of attributes passed to the constructor.
      * @access private
      * @return void
      * @author Aziz Light
      */
     private function set_attributes(array $args)
     {
-        $valid_attributes = array(
-            "class_name"         => 'My' . ucfirst($this->template_name),
-            "parent_class"       => 'CI_' . ucfirst($this->template_name),
-            "extra"              => "",
-            "filename"           => 'my_' . $this->template_name . '.php',
-            "application_folder" => "application",
-        );
-
-        foreach ($valid_attributes as $valid_attribute => $default_value)
+        if ($this->template_name == 'migration_column')
         {
-            if (array_key_exists($valid_attribute, $args))
+            $this->set_migration_column_attributes($args);
+        }
+        else
+        {
+            $valid_attributes = array(
+                "class_name"         => 'My' . ucfirst($this->template_name),
+                "parent_class"       => 'CI_' . ucfirst($this->template_name),
+                "extra"              => "",
+                "filename"           => 'my_' . $this->template_name . '.php',
+                "table_name"         => "my_table",
+                "application_folder" => "application",
+            );
+
+            foreach ($valid_attributes as $valid_attribute => $default_value)
             {
-                $this->$valid_attribute = $args[$valid_attribute];
+                if (array_key_exists($valid_attribute, $args))
+                {
+                    $this->$valid_attribute = $args[$valid_attribute];
+                }
+                else
+                {
+                    $this->$valid_attribute = $default_value;
+                }
+            }
+        }
+
+        return;
+    }
+
+    /**
+     * Set the attributes of the migration
+     *
+     * @access private
+     * @param array $args Migration column attibutes
+     * @return void
+     * @author Aziz Light
+     **/
+    private function set_migration_column_attributes(array $args)
+    {
+        $extra = "\t\t\t'" . $args['column_name'] . "' => array(\n";
+        unset($args['column_name']);
+
+        foreach ($args as $attr => $value)
+        {
+            $extra .= "\t\t\t\t'" . $attr . "' => ";
+
+            if (is_int($value) || is_real($value))
+            {
+                $extra .= $value;
+            }
+            else if (is_bool($value))
+            {
+                $extra .= ($value) ? 'TRUE' : 'FALSE';
             }
             else
             {
-                $this->$valid_attribute = $default_value;
+                $extra .= "'" . $value . "'";
             }
+
+            $extra .= ",\n";
         }
+
+        $extra .= "\t\t\t),\n";
+
+        $this->extra = $extra;
+
+        return;
     }
 
 }
