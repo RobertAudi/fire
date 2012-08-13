@@ -1,5 +1,8 @@
-# fire : CodeIgniter Controller and Model generator
+# fire : CodeIgniter code generator
 This little script lets you generate controllers and models very easily in your codeigniter-based app.
+
+**NOTE**: Right now, fire is not compatible with Windows; I am working
+on that and will release an OS-agnostic version as soon as possible.
 
 ## Installation
 The first thing you have to do after cloning the project is to add the `fire` folder to your `PATH`. In Unix-based systems, add the following line to `.bashrc`, `.bash_profile`, `.zshrc` or the like: (In OS X)
