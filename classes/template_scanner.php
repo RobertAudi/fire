@@ -182,7 +182,7 @@ class TemplateScanner
 
         foreach ($args as $attr => $value)
         {
-            $extra .= "\t\t\t\t'" . $attr . "' => ";
+            $extra .= "\t\t\t\t'" . substr($attr, 7) . "' => ";
 
             if (is_int($value) || is_real($value))
             {

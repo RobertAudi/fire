@@ -45,7 +45,7 @@ class Inferno
      * @access private
      * @var array
      */
-    private static $valid_subjects = array('controller', 'model', 'scaffold');
+    private static $valid_subjects = array('controller', 'model', 'scaffold', 'migration');
 
     // Prevent from instantiating the class.
     public function __construct()
@@ -292,6 +292,7 @@ class Inferno
             case 'string':
             case 'varchar':
                 $attributes['type'] = 'VARCHAR';
+                $attributes['constraint'] = 255;
                 $attributes['null'] = FALSE;
                 break;
             case 'text':

@@ -270,13 +270,24 @@ class Generate extends BaseCommand
                 'parent_class'       => $this->args['parent_migration'],
                 'extra'              => $this->extra
             );
+
+            $template_name = 'migration';
         }
         else
         {
-            // TODO: Create an args array for plain migrations
+            $args = array(
+                'class_name'         => 'Migration_' . $this->args['name'],
+                'table_name'         => $this->get_table_name_out_of_migration_name(),
+                'filename'           => $this->args['filename'],
+                'application_folder' => $this->args['application_folder'],
+                'parent_class'       => $this->args['parent_migration'],
+                'extra'              => $this->extra
+            );
+
+            $template_name = 'empty_migration';
         }
 
-        $template  = new TemplateScanner('migration', $args);
+        $template  = new TemplateScanner($template_name, $args);
         $migration = $template->parse();
 
         $migration_number = $this->get_migration_number();
@@ -477,11 +488,49 @@ class Generate extends BaseCommand
         {
             $config_file_contents = file_get_contents($config_file);
             $config_file_contents = preg_replace('/\$config\[\'migration_version\'\] = \d+;/', '$config[\'migration_version\'] = ' . intval($migration_number) . ';', $config_file_contents, -1, $count);
-            return TRUE;
+
+            if (file_put_contents($config_file, $config_file_contents))
+            {
+                return TRUE;
+            }
+            else
+            {
+                // TODO: Find a clean way to return an error message saying that the migration succeeded but that the migration count could not be incremented in the config file
+                return FALSE;
+            }
+
         }
         else
         {
             return FALSE;
         }
+    }
+
+    /**
+     * Try to extract the table name out of the migration name
+     *
+     * @access private
+     * @return string The guessed table name
+     * @author Aziz Light
+     **/
+    private function get_table_name_out_of_migration_name()
+    {
+        $patterns = array(
+            '/create_(?P<table_name>\w+)$/',
+            '/add_\w+_to_(?P<table_name>\w+)$/',
+            '/add_(?P<table_name>\w+)$/'
+        );
+
+        $table_name = "";
+        foreach ($patterns as $pattern)
+        {
+            if (preg_match($pattern, $this->args['name'], $matches) === 1)
+            {
+                $table_name = $matches['table_name'];
+                break;
+            }
+        }
+
+        return $table_name;
     }
 }
