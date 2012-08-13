@@ -2,92 +2,96 @@
 This little script lets you generate controllers and models very easily in your codeigniter-based app.
 
 ## Installation
-The first thing you have to do is move the *fire* script to a folder of your choice. For the sake of the exemple, I will put it in *~/bin*. You then have to add *~/bin* to your PATH. In Unix-based systems, add the following line to *.bashrc*, *.bash_profile*, *.zshrc* or the like: (In OS X)
+The first thing you have to do after cloning the project is to add the `fire` folder to your `PATH`. In Unix-based systems, add the following line to `.bashrc`, `.bash_profile`, `.zshrc` or the like: (In OS X)
 
-    PATH=/Users/aziz/bin:$PATH
+    PATH=/path/to/the/fire/folder:$PATH
 
-Obviously you would have to replace aziz by your user name. Also, make sure that *fire* is executable. On Unix-based systems (from the command line):
+Also, make sure that the `fire` script (found in the `fire` folder) is executable. On Unix-based systems (from the command line):
 
     chmod a+x fire
 
+**NOTE**: In order for `fire` to work, you should have `php-cli` and it
+should be in your `PATH`. If you're using MAMP, XAMPP, or WAMP then you
+just have to add php to your `PATH`.
+
 ## Basic usage
-Fire works out of the box, all you have to do is navigation to the application folder via the command line and use the fire command. Some examples:
+Fire works out of the box, all you have to do is open a terminal window
+and get going. Here are some examples:
+
+### Create a new CodeIgniter project
+
+    fire new myproject
+
+This command will clone the latest stable version from Github (from this
+repository) in the current folder and remove the git repository so that
+you can have a fresh start. **NOTE**: absolute paths are not supported
+yet.
+
+If you don't want to clone CodeIgniter everytime you create a new
+project run the following command:
+
+    fire bootstrap
+
+This will clone the CodeIgniter project in the same folder as `fire`.
+The next time you run the `fire new` command, it will copy the local
+version of CodeIgniter instead of cloning it.
+
+Finally, you can specify which Github repository to clone from. To do
+this, open the `config/new_project.ini` file in the `fire` folder and
+replace `"EllisLab/CodeIgniter"` by any other repository. **NOTE**: You
+need to use the same form, ie: `username/repo` or `organisation/repo`.
 
 #### Create a controller
-	
-    fire controller posts
-	
-This command will create a posts controller in the controllers folder.
+
+    fire generate controller posts index show new edit delete
+
+This command will create a posts controller in the controllers folder
+and will add the index, show, new, edit and delete actions to it.
 
 If you don't specify a name for the controller you want to create, ***fire*** will ask you to enter one!
-	
-    fire controller
-	
-This will also create a controller.
+
+    fire g controller
+
+This will also create a controller. Notice that the `g` alias is
+available to the lazy people out there too!
 
 #### Create a model
-	
-    fire model post
-	
-This command will create a post model in the models folder.
+
+    fire g model post title:string body:text created_at:datetime updated_at:datetime
+
+This command will create a post model in the models folder. It will also
+create a migration which add a title field as `VARCHAR`, a body field as
+`TEXT`, etc.
 
 Same principle for the model, no need to a name:
-	
-    fire model
-	
-This will also create a model, however the user will be asked to enter a name.
 
-#### Create a views folder
-	
-	fire view posts
-	
-This will create the posts views folder.
+    fire g model
 
-### Adding actions, methods and view files
-To add controller actions, model methods or view files, you need to append a **colon (:)** to the name of the controller, model or view:
-	
-	fire controller posts: index single.
-	fire model post: get_many get_one.
-	fire view posts: index single.
-	
-Notice the **full stop (.)** at the end? It's *optional* if you want to create one file only, but it's **mandatory** if you want to create multiple files!
+This will also create a model, however the user will be asked to enter a
+name. NOTE: When creating a model, the `migration_version` configuration
+will be incremented by one in `application/config/migration.php`.
 
-## Advanced usage
-You can create multiple controllers/models/views folders at the same time and add new actions/methods/views to them.
+### Create a migration
 
-#### Create three controllers
-	
-	fire controller posts comments pages
-	
-This command will create the Posts, Comments and Pages controllers.
+    fire g migration add_author_to_posts author:string
 
-#### Create controllers and models at the same time
-To create controllers and models at the same time, you have to explicitely change the current type of files created.
-	
-	fire model page controller pages
-	fire controller posts model post
-	
-#### Generate models and views automatically
-There is a faster way to do this though! You can automatically create models and views by appending a **plus sign (+)** to the controller keyword:
-	
-	fire controller+ pages
-	
-This will create the pages controller, the page model and the pages views folder.
+This command will generate a blank migration with the name
+`add_author_to_posts.php`, prepended by the migration number of course!
 
-You can also generate models and views for specific controllers only! Just prepend a **plus sign (+)** before the name of the controller:
-	
-	fire controller +pages admin
-	
-This will create the pages and the admin controllers, the page model and the pages views folder.
+In a future release the migration's content will be generated according
+to the name of the migration.
 
-#### Private methods!
-You can create private methods too! All you have to do is prepend an **underscore (_)** before the name of the method:
-	
-	fire controller comments: _is_spam.
-	
-This will create the comments controller and the *_is_spam* private method.
+### Create a scaffold
+
+    fire g scaffold posts
+
+This is a combination of all the above. **HOWEVER, it has not been
+tested thoroughly!** I released this feature as a preview of what is
+coming next.
 
 ## Changelog
+
+**NOTE**: For all the new changes, check the git commits please.
 
 ### 08/10/2010
 * Bug fix: double equal instead of just one (author: [Erik Jansson](http://github.com/Meldanya))
