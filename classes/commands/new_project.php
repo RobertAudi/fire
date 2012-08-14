@@ -91,7 +91,15 @@ class NewProject extends BaseCommand
         {
             if ($this->copy_codeigniter_sample_project($this->location, BASE_PATH . '/codeigniter'))
             {
-                fwrite(STDOUT, "\t" . ApplicationHelpers::colorize('CodeIgniter project created', 'green') . ' ' . $this->name . "\n");
+                if (php_uname("s" !== "Windows NT")
+                {
+                    $message = "\t" . ApplicationHelpers::colorize('CodeIgniter project created', 'green') . ' ' . $this->name . PHP_EOL;
+                }
+                else
+                {
+                    $message = "\tCodeIgniter project created " . $this->name . PHP_EOL;
+                }
+                fwrite(STDOUT, $message);
             }
             else
             {
@@ -100,7 +108,7 @@ class NewProject extends BaseCommand
         }
         else
         {
-            fwrite(STDOUT, "Cloning CodeIgniter...\n");
+            fwrite(STDOUT, 'Cloning CodeIgniter...' . PHP_EOL);
 
             // First let's download CodeIgniter
             if (GithubHelpers::git_clone($this->repo, $this->location, $this->tag_or_branch) === FALSE)
@@ -109,7 +117,15 @@ class NewProject extends BaseCommand
             }
             else
             {
-                fwrite(STDOUT, "\t" . ApplicationHelpers::colorize('CodeIgniter project created', 'green') . ' ' . $this->name . "\n");
+                if (php_uname("s" !== "Windows NT")
+                {
+                    $message = "\t" . ApplicationHelpers::colorize('CodeIgniter project created', 'green') . ' ' . $this->name . PHP_EOL;
+                }
+                else
+                {
+                    $message = "\tCodeIgniter project created " . $this->name . PHP_EOL;
+                }
+                fwrite(STDOUT, $message);
             }
         }
     }

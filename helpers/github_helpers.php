@@ -19,12 +19,32 @@ class GithubHelpers
      */
     public static function git_clone($repo, $location, $tag_or_branch = "")
     {
-        exec('git clone ' . $repo . ' ' . $location . ' > /dev/null 2>&1 && echo "CLONED" || echo "ERROR"', $output);
+        if (php_uname('s') === "Windows NT")
+        {
+            $command = 'git clone ' . $repo . ' "' . $location . '" > NUL && echo CLONED || echo ERROR';
+        }
+        else
+        {
+            $command = 'git clone ' . $repo . ' ' . $location . ' > /dev/null 2>&1 && echo "CLONED" || echo "ERROR"';
+        }
+
+        exec($command, $output);
         if ($output[0] === "CLONED")
         {
             if (!empty($tag_or_branch))
             {
-                exec('git checkout ' . $tag_or_branch . ' > /dev/null 2>&1 && echo "CHECKEDOUT" || echo "ERROR"', $output);
+                unset($command);
+
+                if (php_uname('s') === "Windows NT")
+                {
+                    $command = 'git checkout ' . $tag_or_branch . ' > NUL && echo CHECKEDOUT || echo ERROR';
+                }
+                else
+                {
+                    $command = 'git checkout ' . $tag_or_branch . ' > /dev/null 2>&1 && echo "CHECKEDOUT" || echo "ERROR"';
+                }
+
+                exec($command, $output);
                 if ($output[0] === "ERROR")
                 {
                     ApplicationHelpers::delete_dir($location);
@@ -33,7 +53,7 @@ class GithubHelpers
             }
 
             // delete the .git directory
-            ApplicationHelpers::delete_dir($location . '/.git');
+            ApplicationHelpers::delete_dir($location . DIRECTORY_SEPARATOR . '.git');
             return TRUE;
         }
         else if ($output[0] == "ERROR")

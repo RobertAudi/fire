@@ -77,19 +77,28 @@ class Generate extends BaseCommand
         if (file_exists($filename))
         {
             $message .= 'Controller already exists : ';
-            $message  = ApplicationHelpers::colorize($message, 'light_blue');
+            if (php_uname("s") !== "Windows NT")
+            {
+                $message  = ApplicationHelpers::colorize($message, 'light_blue');
+            }
             $message .= $this->args['application_folder'] . '/controllers/' . $this->args['filename'];
         }
         elseif (file_put_contents($filename, $controller))
         {
             $message .= 'Created controller: ';
-            $message  = ApplicationHelpers::colorize($message, 'green');
+            if (php_uname("s") !== "Windows NT")
+            {
+                $message  = ApplicationHelpers::colorize($message, 'green');
+            }
             $message .= $this->args['application_folder'] . '/controllers/' . $this->args['filename'];
         }
         else
         {
             $message .= 'Unable to create controller: ';
-            $message  = ApplicationHelpers::colorize($message, 'red');
+            if (php_uname("s") !== "Windows NT")
+            {
+                $message  = ApplicationHelpers::colorize($message, 'red');
+            }
             $message .= $this->args['application_folder'] . '/controllers/' . $this->args['filename'];
         }
 
@@ -128,19 +137,28 @@ class Generate extends BaseCommand
         if (file_exists($filename))
         {
             $message .= 'Model already exists : ';
-            $message  = ApplicationHelpers::colorize($message, 'light_blue');
+            if (php_uname("s") !== "Windows NT")
+            {
+                $message  = ApplicationHelpers::colorize($message, 'light_blue');
+            }
             $message .= $this->args['application_folder'] . '/models/' . $this->args['filename'];
         }
         elseif (file_put_contents($filename, $model))
         {
             $message .= 'Created model: ';
-            $message  = ApplicationHelpers::colorize($message, 'green');
+            if (php_uname("s") !== "Windows NT")
+            {
+                $message  = ApplicationHelpers::colorize($message, 'green');
+            }
             $message .= $this->args['application_folder'] . '/models/' . $this->args['filename'];
         }
         else
         {
             $message .= 'Unable to create model: ';
-            $message  = ApplicationHelpers::colorize($message, 'red');
+            if (php_uname("s") !== "Windows NT")
+            {
+                $message  = ApplicationHelpers::colorize($message, 'red');
+            }
             $message .= $this->args['application_folder'] . '/models/' . $this->args['filename'];
         }
 
@@ -177,14 +195,28 @@ class Generate extends BaseCommand
             if (mkdir($location, 0755))
             {
                 $message .= 'Created folder: ';
-                $message  = ApplicationHelpers::colorize($message, 'green') . $views_folder;
+                if (php_uname("s") !== "Windows NT")
+                {
+                    $message  = ApplicationHelpers::colorize($message, 'green') . $views_folder;
+                }
+                else
+                {
+                    $message .= $views_folder;
+                }
                 fwrite(STDOUT, $message . PHP_EOL);
                 unset($message);
             }
             else
             {
                 $message .= 'Unable to create folder: ';
-                $message  = ApplicationHelpers::colorize($message, 'red') . $views_folder;
+                if (php_uname("s") !== "Windows NT")
+                {
+                    $message  = ApplicationHelpers::colorize($message, 'red') . $views_folder;
+                }
+                else
+                {
+                    $message .= $views_folder;
+                }
                 fwrite(STDOUT, $message . PHP_EOL);
                 return false;
             }
@@ -197,7 +229,14 @@ class Generate extends BaseCommand
             if (file_exists($location . '/' . $view . '.php'))
             {
                 $message = "\tView already exists: ";
-                $message = ApplicationHelpers::colorize($message, 'light_blue') . $views_folder . '/' . $view . '.php';
+                if (php_uname("s") !== "Windows NT")
+                {
+                    $message = ApplicationHelpers::colorize($message, 'light_blue') . $views_folder . '/' . $view . '.php';
+                }
+                else
+                {
+                    $message .= $views_folder . '/' . $view . '.php';
+                }
                 fwrite(STDOUT, $message . PHP_EOL);
                 unset($message);
                 continue;
@@ -210,12 +249,26 @@ class Generate extends BaseCommand
             if (file_put_contents($location . '/' . $view . '.php', $content))
             {
                 $message .= 'Created view: ';
-                $message  = ApplicationHelpers::colorize($message, 'green') . $views_folder . '/' . $view . '.php';
+                if (php_uname("s") !== "Windows NT")
+                {
+                    $message  = ApplicationHelpers::colorize($message, 'green') . $views_folder . '/' . $view . '.php';
+                }
+                else
+                {
+                    $message  .= $views_folder . '/' . $view . '.php';
+                }
             }
             else
             {
                 $message .= 'Unable to create view ';
-                $message  = ApplicationHelpers::colorize($message, 'red') . $views_folder . '/' . $view . '.php';
+                if (php_uname("s") !== "Windows NT")
+                {
+                    $message  = ApplicationHelpers::colorize($message, 'red') . $views_folder . '/' . $view . '.php';
+                }
+                else
+                {
+                    $message  .= $views_folder . '/' . $view . '.php';
+                }
             }
 
             fwrite(STDOUT, $message . PHP_EOL);
@@ -231,7 +284,15 @@ class Generate extends BaseCommand
         if (isset($this->args['extras']))
         {
             $message = "The following arguments were ignored: ";
-            fwrite(STDOUT, ApplicationHelpers::colorize($message, 'red') . implode(", ", $this->args['extra']) . PHP_EOL);
+            if (php_uname("s") !== "Windows NT")
+            {
+                $message = ApplicationHelpers::colorize($message, 'red') . implode(", ", $this->args['extra']) . PHP_EOL;
+            }
+            else
+            {
+                $message .= implode(", ", $this->args['extra']) . PHP_EOL;
+            }
+            fwrite(STDOUT, $message);
             unset($this->args['extra']);
         }
 
@@ -299,19 +360,28 @@ class Generate extends BaseCommand
         if (file_exists($potential_duplicate_migration))
         {
             $message .= 'Migration already exists : ';
-            $message  = ApplicationHelpers::colorize($message, 'light_blue');
+            if (php_uname("s") !== "Windows NT")
+            {
+                $message  = ApplicationHelpers::colorize($message, 'light_blue');
+            }
             $message .= $this->args['application_folder'] . '/migrations/' . $potential_duplicate_migration_filename;
         }
         else if (file_put_contents($filename, $migration) && $this->add_migration_number_to_config_file($migration_number))
         {
             $message .= 'Created Migration: ';
-            $message  = ApplicationHelpers::colorize($message, 'green');
+            if (php_uname("s") !== "Windows NT")
+            {
+                $message  = ApplicationHelpers::colorize($message, 'green');
+            }
             $message .= $this->args['application_folder'] . '/migrations/' . $migration_number . '_' . $this->args['filename'];
         }
         else
         {
             $message .= 'Unable to create migration: ';
-            $message  = ApplicationHelpers::colorize($message, 'red');
+            if (php_uname("s") !== "Windows NT")
+            {
+                $message  = ApplicationHelpers::colorize($message, 'red');
+            }
             $message .= $this->args['application_folder'] . '/migrations/' . $migration_number . '_' . $this->args['filename'];
         }
 

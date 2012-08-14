@@ -61,11 +61,11 @@ catch (InvalidArgumentException $e)
     }
     elseif ($e->getCode() == MISSING_NAME_EXCEPTION)
     {
-        fwrite(STDOUT, "Please enter a name:\n");
+        fwrite(STDOUT, 'Please enter a name:' . PHP_EOL);
         $name = trim(fgets(STDIN));
         if (empty($name))
         {
-            fwrite(STDOUT, "The name is required!\n");
+            fwrite(STDOUT, 'The name is required!' . PHP_EOL);
             exit;
         }
         else
@@ -78,14 +78,14 @@ catch (InvalidArgumentException $e)
     else
     {
         //FIXME: Handle this better!
-        fwrite(STDOUT, $e->getMessage() . "\n");
+        fwrite(STDOUT, $e->getMessage() . PHP_EOL);
         exit;
     }
 }
 catch (RuntimeException $e)
 {
     //FIXME: Handle this better!
-    fwrite(STDOUT, $e->getMessage() . "\n");
+    fwrite(STDOUT, $e->getMessage() . PHP_EOL);
     exit;
 }
 

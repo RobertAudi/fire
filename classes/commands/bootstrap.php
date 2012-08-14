@@ -27,14 +27,29 @@ class Bootstrap extends BaseCommand
      **/
     public function run()
     {
-        fwrite(STDOUT, "Bootstrapping Fire...\n");
-        if (GithubHelpers::git_clone($this->get_github_repo_link(), BASE_PATH . '/codeigniter') === FALSE)
+        $codeigniter_sample_project_path = BASE_PATH . DIRECTORY_SEPARATOR . 'codeigniter';
+        if (is_dir($codeigniter_sample_project_path))
+        {
+            ApplicationHelpers::delete_dir($codeigniter_sample_project_path);
+        }
+
+        fwrite(STDOUT, 'Bootstrapping Fire...' . PHP_EOL);
+        if (GithubHelpers::git_clone($this->get_github_repo_link(), $codeigniter_sample_project_path) === FALSE)
         {
             throw new RuntimeException("Unable to clone the sample CodeIgniter project from Github");
         }
         else
         {
-            fwrite(STDOUT, "\t" . ApplicationHelpers::colorize('Fire', 'green') . "  Bootstrapped\n");
+            if (php_uname("s") === "Windows NT")
+            {
+                $message = "\tFire Bootstrapped" . PHP_EOL;
+            }
+            else
+            {
+                $message = "\t" . ApplicationHelpers::colorize('Fire', 'green') . '  Bootstrapped' . PHP_EOL;
+            }
+
+            fwrite(STDOUT, $message);
         }
     }
 
