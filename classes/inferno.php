@@ -153,7 +153,7 @@ class Inferno
             $parsed_args['command'] = $args[0];
             array_shift($args);
         }
-        else
+        else if (!empty($args))
         {
             $args[0] = self::check_and_get_command_alias($args[0]);
             if (empty($args[0]))
@@ -167,6 +167,10 @@ class Inferno
                 $parsed_args['command'] = $args[0];
                 array_shift($args);
             }
+        }
+        else
+        {
+            throw new InvalidArgumentException("Invalid task", INVALID_TASK_EXCEPTION);
         }
 
         // TODO: Find a better name than "subject"

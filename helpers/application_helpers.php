@@ -132,6 +132,8 @@ class ApplicationHelpers
             }
             else
             {
+                // The chmod call here is to avoid Permission Denied errors in Windows
+                chmod($file->getRealPath(), 0777);
                 unlink($file->getRealPath());
             }
         }
