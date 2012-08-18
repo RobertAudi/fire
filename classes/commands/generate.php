@@ -478,7 +478,7 @@ class Generate extends BaseCommand
             $extra .= $template->parse();
         }
 
-        return $extra;
+        return trim($extra, PHP_EOL) . PHP_EOL;
     }
 
     /**
