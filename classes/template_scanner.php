@@ -177,7 +177,7 @@ class TemplateScanner
      **/
     private function set_migration_column_attributes(array $args)
     {
-        $extra = "\t\t\t'" . $args['column_name'] . "' => array(\n";
+        $extra = "\t\t\t'" . $args['column_name'] . '\' => array(' . PHP_EOL;
         unset($args['column_name']);
 
         foreach ($args as $attr => $value)
@@ -197,10 +197,10 @@ class TemplateScanner
                 $extra .= "'" . $value . "'";
             }
 
-            $extra .= ",\n";
+            $extra .= ',' . PHP_EOL;
         }
 
-        $extra .= "\t\t\t),\n";
+        $extra .= "\t\t\t)," . PHP_EOL;
 
         $this->extra = $extra;
 
