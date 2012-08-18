@@ -91,7 +91,7 @@ class NewProject extends BaseCommand
         {
             if ($this->copy_codeigniter_sample_project($this->location, BASE_PATH . '/codeigniter'))
             {
-                if (php_uname("s" !== "Windows NT")
+                if (php_uname("s") !== "Windows NT")
                 {
                     $message = "\t" . ApplicationHelpers::colorize('CodeIgniter project created', 'green') . ' ' . $this->name . PHP_EOL;
                 }
@@ -117,7 +117,7 @@ class NewProject extends BaseCommand
             }
             else
             {
-                if (php_uname("s" !== "Windows NT")
+                if (php_uname("s") !== "Windows NT")
                 {
                     $message = "\t" . ApplicationHelpers::colorize('CodeIgniter project created', 'green') . ' ' . $this->name . PHP_EOL;
                 }
