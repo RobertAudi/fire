@@ -26,8 +26,8 @@ class FolderScanner
     {
         $location = new stdClass();
         $location->path = getcwd();
-        $location->dirs = explode('/', $location->path);
-        $location->dirs[0] = '/';
+        $location->dirs = explode(DIRECTORY_SEPARATOR, $location->path);
+        $location->dirs[0] = DIRECTORY_SEPARATOR;
 
         return $location;
     } // End of get_location
@@ -88,10 +88,10 @@ class FolderScanner
                 if (!in_array($application_folder, $folders))
                     return false;
 
-                return $location->path . '/' . $system_folder . '/' . $application_folder;
+                return $location->path . DIRECTORY_SEPARATOR . $system_folder . DIRECTORY_SEPARATOR . $application_folder;
             }
 
-            return $location->path . '/' . $application_folder;
+            return $location->path . DIRECTORY_SEPARATOR . $application_folder;
         }
 
         return $location->path;

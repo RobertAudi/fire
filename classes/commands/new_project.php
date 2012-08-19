@@ -89,7 +89,7 @@ class FIRE_NewProject extends BaseCommand
     {
         if ($this->is_fire_bootstrapped() && $this->force_clone === FALSE)
         {
-            if ($this->copy_codeigniter_sample_project($this->location, BASE_PATH . '/codeigniter'))
+            if ($this->copy_codeigniter_sample_project($this->location, BASE_PATH . DIRECTORY_SEPARATOR . 'codeigniter'))
             {
                 if (php_uname("s") !== "Windows NT")
                 {
@@ -219,6 +219,6 @@ class FIRE_NewProject extends BaseCommand
      */
     private function is_fire_bootstrapped()
     {
-        return is_dir(BASE_PATH . '/codeigniter');
+        return is_dir(BASE_PATH . DIRECTORY_SEPARATOR . 'codeigniter');
     }
 }

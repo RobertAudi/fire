@@ -115,7 +115,7 @@ class TemplateScanner
      */
     private function get_template()
     {
-        $path = BASE_PATH . '/templates/' . $this->template_name . '.php';
+        $path = BASE_PATH . DIRECTORY_SEPARATOR . 'templates' . DIRECTORY_SEPARATOR . $this->template_name . '.php';
         if (file_exists($path))
         {
             return file_get_contents($path);

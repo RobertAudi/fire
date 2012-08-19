@@ -180,7 +180,7 @@ class FIRE_Migrate extends BaseCommand
         // ---------------------------------------------------------------------
 
         $system_path = $this->system_folder;
-        $generate_config = parse_ini_file(BASE_PATH . "/config/generate.ini");
+        $generate_config = parse_ini_file(BASE_PATH . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'generate.ini');
         $application_folder = $generate_config['application_folder'];
         $view_folder = '';
         unset($this->system_folder, $generate_config);
@@ -370,7 +370,7 @@ class FIRE_Migrate extends BaseCommand
      **/
     private function enable_migrations()
     {
-        $config_file = $this->location . '/config/migration.php';
+        $config_file = $this->location . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'migration.php';
         if (is_file($config_file))
         {
             $config_file_contents = file_get_contents($config_file);

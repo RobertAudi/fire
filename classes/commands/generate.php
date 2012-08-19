@@ -72,7 +72,7 @@ class FIRE_Generate extends BaseCommand
         $template    = new TemplateScanner("controller", $args);
         $controller  = $template->parse();
 
-        $location = $this->args["location"] . "/controllers/";
+        $location = $this->args["location"] . DIRECTORY_SEPARATOR . 'controllers' . DIRECTORY_SEPARATOR;
         $filename = $location . $this->args['filename'];
 
         $message = "\t";
@@ -83,7 +83,7 @@ class FIRE_Generate extends BaseCommand
             {
                 $message  = ApplicationHelpers::colorize($message, 'light_blue');
             }
-            $message .= $this->args['application_folder'] . '/controllers/' . $this->args['filename'];
+            $message .= $this->args['application_folder'] . DIRECTORY_SEPARATOR . 'controllers' . DIRECTORY_SEPARATOR . $this->args['filename'];
         }
         elseif (file_put_contents($filename, $controller))
         {
@@ -92,7 +92,7 @@ class FIRE_Generate extends BaseCommand
             {
                 $message  = ApplicationHelpers::colorize($message, 'green');
             }
-            $message .= $this->args['application_folder'] . '/controllers/' . $this->args['filename'];
+            $message .= $this->args['application_folder'] . DIRECTORY_SEPARATOR . 'controllers' . DIRECTORY_SEPARATOR . $this->args['filename'];
         }
         else
         {
@@ -101,7 +101,7 @@ class FIRE_Generate extends BaseCommand
             {
                 $message  = ApplicationHelpers::colorize($message, 'red');
             }
-            $message .= $this->args['application_folder'] . '/controllers/' . $this->args['filename'];
+            $message .= $this->args['application_folder'] . DIRECTORY_SEPARATOR . 'controllers' . DIRECTORY_SEPARATOR . $this->args['filename'];
         }
 
         // The controller has been generated, output the confirmation message
@@ -143,7 +143,7 @@ class FIRE_Generate extends BaseCommand
             {
                 $message  = ApplicationHelpers::colorize($message, 'light_blue');
             }
-            $message .= $this->args['application_folder'] . '/models/' . $this->args['filename'];
+            $message .= $this->args['application_folder'] . DIRECTORY_SEPARATOR . 'models' . DIRECTORY_SEPARATOR . $this->args['filename'];
         }
         elseif (file_put_contents($filename, $model))
         {
@@ -152,7 +152,7 @@ class FIRE_Generate extends BaseCommand
             {
                 $message  = ApplicationHelpers::colorize($message, 'green');
             }
-            $message .= $this->args['application_folder'] . '/models/' . $this->args['filename'];
+            $message .= $this->args['application_folder'] . DIRECTORY_SEPARATOR . 'models' . DIRECTORY_SEPARATOR . $this->args['filename'];
         }
         else
         {
@@ -161,7 +161,7 @@ class FIRE_Generate extends BaseCommand
             {
                 $message  = ApplicationHelpers::colorize($message, 'red');
             }
-            $message .= $this->args['application_folder'] . '/models/' . $this->args['filename'];
+            $message .= $this->args['application_folder'] . DIRECTORY_SEPARATOR . 'models' . DIRECTORY_SEPARATOR . $this->args['filename'];
         }
 
         fwrite(STDOUT, $message . PHP_EOL);
@@ -189,8 +189,8 @@ class FIRE_Generate extends BaseCommand
         }
 
         // Check that the views folder exists and create it if it doesn't
-        $views_folder = $this->args['application_folder'] . '/views/' . strtolower($controller);
-        $location = $this->args['location'] . '/views/' . strtolower($controller);
+        $views_folder = $this->args['application_folder'] . DIRECTORY_SEPARATOR . 'views' . DIRECTORY_SEPARATOR . strtolower($controller);
+        $location = $this->args['location'] . DIRECTORY_SEPARATOR . 'views' . DIRECTORY_SEPARATOR . strtolower($controller);
         if (!file_exists($location) || !is_dir($location))
         {
             $message = "\t";
@@ -228,7 +228,7 @@ class FIRE_Generate extends BaseCommand
         foreach ($views as $view)
         {
             // First check that the views doesn't already exist
-            if (file_exists($location . '/' . $view . '.php'))
+            if (file_exists($location . DIRECTORY_SEPARATOR . $view . '.php'))
             {
                 $message = "\tView already exists: ";
                 if (php_uname("s") !== "Windows NT")
@@ -237,7 +237,7 @@ class FIRE_Generate extends BaseCommand
                 }
                 else
                 {
-                    $message .= $views_folder . '/' . $view . '.php';
+                    $message .= $views_folder . DIRECTORY_SEPARATOR . $view . '.php';
                 }
                 fwrite(STDOUT, $message . PHP_EOL);
                 unset($message);
@@ -245,19 +245,19 @@ class FIRE_Generate extends BaseCommand
             }
 
             $content  = '<h1>' . $controller . '#' . $view . '</h1>';
-            $content .= PHP_EOL . '<p>Find me in ' . $views_folder . '/' . $view . '.php</p>';
+            $content .= PHP_EOL . '<p>Find me in ' . $views_folder . DIRECTORY_SEPARATOR . $view . '.php</p>';
 
             $message = "\t";
-            if (file_put_contents($location . '/' . $view . '.php', $content))
+            if (file_put_contents($location . DIRECTORY_SEPARATOR . $view . '.php', $content))
             {
                 $message .= 'Created view: ';
                 if (php_uname("s") !== "Windows NT")
                 {
-                    $message  = ApplicationHelpers::colorize($message, 'green') . $views_folder . '/' . $view . '.php';
+                    $message  = ApplicationHelpers::colorize($message, 'green') . $views_folder . DIRECTORY_SEPARATOR . $view . '.php';
                 }
                 else
                 {
-                    $message  .= $views_folder . '/' . $view . '.php';
+                    $message  .= $views_folder . DIRECTORY_SEPARATOR . $view . '.php';
                 }
             }
             else
@@ -265,11 +265,11 @@ class FIRE_Generate extends BaseCommand
                 $message .= 'Unable to create view ';
                 if (php_uname("s") !== "Windows NT")
                 {
-                    $message  = ApplicationHelpers::colorize($message, 'red') . $views_folder . '/' . $view . '.php';
+                    $message  = ApplicationHelpers::colorize($message, 'red') . $views_folder . DIRECTORY_SEPARATOR . $view . '.php';
                 }
                 else
                 {
-                    $message  .= $views_folder . '/' . $view . '.php';
+                    $message  .= $views_folder . DIRECTORY_SEPARATOR . $view . '.php';
                 }
             }
 
@@ -314,7 +314,7 @@ class FIRE_Generate extends BaseCommand
      **/
     private function migration()
     {
-        $location = $this->args['location'] . '/migrations/';
+        $location = $this->args['location'] . DIRECTORY_SEPARATOR . 'migrations' . DIRECTORY_SEPARATOR;
         if (!is_dir($location))
         {
             mkdir($location);
@@ -366,7 +366,7 @@ class FIRE_Generate extends BaseCommand
             {
                 $message  = ApplicationHelpers::colorize($message, 'light_blue');
             }
-            $message .= $this->args['application_folder'] . '/migrations/' . $potential_duplicate_migration_filename;
+            $message .= $this->args['application_folder'] . DIRECTORY_SEPARATOR . 'migrations' . DIRECTORY_SEPARATOR . $potential_duplicate_migration_filename;
         }
         else if (file_put_contents($filename, $migration) && MigrationHelpers::add_migration_number_to_config_file($this->args['location'], $migration_number))
         {
@@ -375,7 +375,7 @@ class FIRE_Generate extends BaseCommand
             {
                 $message  = ApplicationHelpers::colorize($message, 'green');
             }
-            $message .= $this->args['application_folder'] . '/migrations/' . $migration_number . '_' . $args['filename'];
+            $message .= $this->args['application_folder'] . DIRECTORY_SEPARATOR . 'migrations' . DIRECTORY_SEPARATOR . $migration_number . '_' . $args['filename'];
         }
         else
         {
@@ -384,7 +384,7 @@ class FIRE_Generate extends BaseCommand
             {
                 $message  = ApplicationHelpers::colorize($message, 'red');
             }
-            $message .= $this->args['application_folder'] . '/migrations/' . $migration_number . '_' . $this->args['filename'];
+            $message .= $this->args['application_folder'] . DIRECTORY_SEPARATOR . 'migrations' . DIRECTORY_SEPARATOR . $migration_number . '_' . $this->args['filename'];
         }
 
         fwrite(STDOUT, $message . PHP_EOL);

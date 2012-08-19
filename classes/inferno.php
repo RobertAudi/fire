@@ -107,7 +107,7 @@ class Inferno
 
         // FIXME: Make this more generic
         // Get the config
-        $config = parse_ini_file(BASE_PATH . "/config/{$args["command"]}.ini");
+        $config = parse_ini_file(BASE_PATH . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . "{$args["command"]}.ini");
 
         // Add the location to the configuration array.
         $config["location"] = $location;

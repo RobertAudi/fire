@@ -37,7 +37,7 @@ class MigrationHelpers
      **/
     public static function get_latest_migration_number($application_folder)
     {
-        $migrations = glob($application_folder . '/migrations/*.php');
+        $migrations = glob($application_folder . DIRECTORY_SEPARATOR . 'migrations' . DIRECTORY_SEPARATOR . '*.php');
         $tmp = end($migrations);
         $tmp = explode(DIRECTORY_SEPARATOR, $tmp);
         $migration = end($tmp);
@@ -116,7 +116,7 @@ class MigrationHelpers
      **/
     public static function add_migration_number_to_config_file($application_folder, $migration_number)
     {
-        $config_file = $application_folder . '/config/migration.php';
+        $config_file = $application_folder . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'migration.php';
         if (is_file($config_file))
         {
             $config_file_contents = file_get_contents($config_file);

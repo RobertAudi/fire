@@ -63,7 +63,7 @@ class FIRE_Bootstrap extends BaseCommand
      */
     private function get_github_repo_link()
     {
-        $config = parse_ini_file(BASE_PATH . "/config/new_project.ini");
+        $config = parse_ini_file(BASE_PATH . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'new_project.ini');
         return 'git://github.com/' . $config['github_repo'] . '.git';
     }
 }
