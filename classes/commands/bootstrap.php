@@ -5,7 +5,7 @@ require_once BASE_PATH . DIRECTORY_SEPARATOR . 'helpers' . DIRECTORY_SEPARATOR .
 /**
  * Bootstrap Command
  */
-class Bootstrap extends BaseCommand
+class FIRE_Bootstrap extends BaseCommand
 {
     /**
      * El Constructor!

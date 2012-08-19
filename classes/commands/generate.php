@@ -3,7 +3,7 @@
 /**
 * Generate task
 */
-class Generate extends BaseCommand
+class FIRE_Generate extends BaseCommand
 {
     /**
      * Arguments passed to the constructor.

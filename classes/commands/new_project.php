@@ -5,7 +5,7 @@ require_once BASE_PATH . DIRECTORY_SEPARATOR . 'helpers' . DIRECTORY_SEPARATOR .
 /**
  * The new_project command
  */
-class NewProject extends BaseCommand
+class FIRE_NewProject extends BaseCommand
 {
     /**
      * The name of the new project

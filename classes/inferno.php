@@ -111,8 +111,9 @@ class Inferno
         // Remove the command from the array.
         unset($args["command"]);
 
+        $klass = 'FIRE_' . $command_class;
         // Finally, call and run the command.
-        $process = new $command_class($args);
+        $process = new $klass($args);
         return $process->run();
     }
 
