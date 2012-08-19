@@ -355,6 +355,7 @@ class FIRE_Migrate extends BaseCommand
         {
             $file_location = FolderScanner::system_path() . 'core' . DIRECTORY_SEPARATOR . $file . '.php';
             copy(BASE_PATH . DIRECTORY_SEPARATOR . 'temp' . DIRECTORY_SEPARATOR . $file . '.php', $file_location);
+            unlink(BASE_PATH . DIRECTORY_SEPARATOR . 'temp' . DIRECTORY_SEPARATOR . $file . '.php');
         }
 
         return;
