@@ -84,6 +84,20 @@ This command will generate a blank migration with the name
 In a future release the migration's content will be generated according
 to the name of the migration.
 
+### Migrate the database
+
+Fire lets you migrate and rollback the database, but first, you need to
+setup your database config in `application/config/database.php` and you
+need to run the following command:
+
+     fire migrate install
+
+You can now migrate and rollback the database from the command line
+without any efforts:
+
+    fire migrate
+    fire migrate rollback
+
 ### Create a scaffold
 
     fire g scaffold posts
