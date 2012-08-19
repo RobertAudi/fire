@@ -1,4 +1,4 @@
-<?php
+<?php if (!defined('BASE_PATH')) exit('No direct script access allowed');
 
 /**
 * Inflector for pluralize and singularize English nouns.
