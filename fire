@@ -18,8 +18,8 @@ switch (ENVIRONMENT)
 
 define('BASE_PATH', __DIR__);
 
-require_once "config/constants.php";
-require_once "helpers/application_helpers.php";
+require_once BASE_PATH . '/config/constants.php';
+require_once BASE_PATH . '/helpers/application_helpers.php';
 
 // Load all the classes dynamically
 foreach (glob(BASE_PATH . "/classes/*.php") as $php_class)
@@ -33,7 +33,12 @@ require_once BASE_PATH . "/classes/commands/base_command.php";
 // Lazy-load the commands
 function __autoload($command)
 {
-    require_once BASE_PATH . '/classes/commands/' . ApplicationHelpers::underscorify($command) . '.php';
+    $valid_commands = array('FIRE_Bootstrap', 'FIRE_Generate', 'FIRE_Migrate', 'FIRE_NewProject');
+
+    if (in_array($command, $valid_commands))
+    {
+        require_once BASE_PATH . '/classes/commands/' . ApplicationHelpers::underscorify(substr($command, 5)) . '.php';
+    }
 }
 
 try

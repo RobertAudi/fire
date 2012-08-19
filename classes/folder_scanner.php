@@ -96,6 +96,42 @@ class FolderScanner
 
         return $location->path;
     } // End of check_location
+
+    /**
+     * Get the path to the system folder.
+     * This is specifically relevent if fire
+     * was called from the application folder.
+     *
+     * @access public
+     * @return string The system path
+     * @throws RuntimeException If the system folder is not found
+     * @author Aziz Light
+     **/
+    public static function system_path($system_folder = 'system')
+    {
+        $system_path = '';
+        $location = self::get_location();
+        $folders = self::ls();
+
+        if (in_array($system_folder, $folders))
+        {
+            $system_path .= $location->path . DIRECTORY_SEPARATOR . $system_folder . DIRECTORY_SEPARATOR;
+        }
+        else
+        {
+            $folders = self::ls('..');
+            if (in_array($system_folder, $folders))
+            {
+                $system_path = realpath($location->path . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . $system_folder) . DIRECTORY_SEPARATOR;
+            }
+            else
+            {
+                throw new RuntimeException('Unable to find the system folder...');
+            }
+        }
+
+        return $system_path;
+    }
 } // End of FolderScanner
 
 /* End of file folder_scanner.php */

@@ -1,5 +1,7 @@
 <?php if (!defined('BASE_PATH')) exit('No direct script access allowed');
 
+require_once BASE_PATH . DIRECTORY_SEPARATOR . 'helpers' . DIRECTORY_SEPARATOR . 'migration_helpers.php';
+
 /**
 * Generate task
 */
@@ -55,13 +57,13 @@ class FIRE_Generate extends BaseCommand
      *
      * @access private
      * @param array $force_views_creation : Should the method force the creation of views? Used in the scaffold method.
-     * @return string
+     * @return void
      * @author Aziz Light
      */
     private function controller()
     {
         $args = array(
-            "class_name"         => $this->args['name'],
+            "class_name"         => ApplicationHelpers::camelize($this->args['name']),
             "filename"           => $this->args['filename'],
             "application_folder" => $this->args['application_folder'],
             "parent_class"       => $this->args['parent_controller'],
@@ -324,9 +326,9 @@ class FIRE_Generate extends BaseCommand
         if ($calling_function === "model")
         {
             $args = array(
-                'class_name'         => 'Migration_Add_' . $this->args['name'],
-                'table_name'         => strtolower($this->args['name']),
-                'filename'           => 'add_' . $this->args['filename'],
+                'class_name'         => 'Migration_Add_' . Inflector::pluralize($this->args['name']),
+                'table_name'         => Inflector::pluralize(strtolower($this->args['name'])),
+                'filename'           => 'add_' . Inflector::pluralize(ApplicationHelpers::underscorify($this->args['name'])) . '.php',
                 'application_folder' => $this->args['application_folder'],
                 'parent_class'       => $this->args['parent_migration'],
                 'extra'              => $this->extra
@@ -351,9 +353,9 @@ class FIRE_Generate extends BaseCommand
         $template  = new TemplateScanner($template_name, $args);
         $migration = $template->parse();
 
-        $migration_number = $this->get_migration_number();
-        $filename = $location . $migration_number . '_' . $this->args['filename'];
-        $potential_duplicate_migration_filename = $this->decrement_migration_number($migration_number) . '_' . $this->args['filename'];
+        $migration_number = MigrationHelpers::get_migration_number($this->args['location']);
+        $filename = $location . $migration_number . '_' . $args['filename'];
+        $potential_duplicate_migration_filename = MigrationHelpers::decrement_migration_number($migration_number) . '_' . $args['filename'];
         $potential_duplicate_migration = $location . $potential_duplicate_migration_filename;
 
         $message = "\t";
@@ -366,14 +368,14 @@ class FIRE_Generate extends BaseCommand
             }
             $message .= $this->args['application_folder'] . '/migrations/' . $potential_duplicate_migration_filename;
         }
-        else if (file_put_contents($filename, $migration) && $this->add_migration_number_to_config_file($migration_number))
+        else if (file_put_contents($filename, $migration) && MigrationHelpers::add_migration_number_to_config_file($this->args['location'], $migration_number))
         {
             $message .= 'Created Migration: ';
             if (php_uname("s") !== "Windows NT")
             {
                 $message  = ApplicationHelpers::colorize($message, 'green');
             }
-            $message .= $this->args['application_folder'] . '/migrations/' . $migration_number . '_' . $this->args['filename'];
+            $message .= $this->args['application_folder'] . '/migrations/' . $migration_number . '_' . $args['filename'];
         }
         else
         {
@@ -479,101 +481,6 @@ class FIRE_Generate extends BaseCommand
         }
 
         return trim($extra, PHP_EOL) . PHP_EOL;
-    }
-
-    /**
-     * Get the number of the migration by looking at the existing migrations
-     *
-     * @access private
-     * @return string The number of the migration number in the format 001
-     * @author Aziz Light
-     **/
-    private function get_migration_number()
-    {
-        $migrations = glob($this->args['location'] . '/migrations/*.php');
-        $tmp = end($migrations);
-        $tmp = explode(DIRECTORY_SEPARATOR, $tmp);
-        $migration = end($tmp);
-        $migration_number = intval($migration);
-        $migration_number++;
-
-        if ($migration_number < 10)
-        {
-            $migration_number = '00' . $migration_number;
-        }
-        else if ($migration_number < 100)
-        {
-            $migration_number = '0' . $migration_number;
-        }
-        else
-        {
-            $migration_number = strval($migration_number);
-        }
-
-        return $migration_number;
-    }
-
-    /**
-     * This method is used in the process of verifying if a migration
-     * already exists.
-     *
-     * @access private
-     * @param string $migration_number A migration number in the form 001
-     * @return string Decremented migration number
-     * @author Aziz Light
-     **/
-    private function decrement_migration_number($migration_number)
-    {
-        $migration_number = intval($migration_number);
-        $migration_number--;
-
-        if ($migration_number < 10)
-        {
-            $migration_number = '00' . $migration_number;
-        }
-        else if ($migration_number < 100)
-        {
-            $migration_number = '0' . $migration_number;
-        }
-        else
-        {
-            $migration_number = strval($migration_number);
-        }
-
-        return $migration_number;
-    }
-
-    /**
-     * This method adds the migration number to the config file
-     *
-     * @access private
-     * @param string $migration_number The number of the migration in the form 001
-     * @return bool Wether or not the migration number was added to the config file
-     * @author Aziz Light
-     **/
-    private function add_migration_number_to_config_file($migration_number)
-    {
-        $config_file = $this->args['location'] . '/config/migration.php';
-        if (is_file($config_file))
-        {
-            $config_file_contents = file_get_contents($config_file);
-            $config_file_contents = preg_replace('/\$config\[\'migration_version\'\] = \d+;/', '$config[\'migration_version\'] = ' . intval($migration_number) . ';', $config_file_contents, -1, $count);
-
-            if (file_put_contents($config_file, $config_file_contents))
-            {
-                return TRUE;
-            }
-            else
-            {
-                // TODO: Find a clean way to return an error message saying that the migration succeeded but that the migration count could not be incremented in the config file
-                return FALSE;
-            }
-
-        }
-        else
-        {
-            return FALSE;
-        }
     }
 
     /**

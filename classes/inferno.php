@@ -11,7 +11,7 @@ class Inferno
      * @access private
      * @var array
      */
-    private static $valid_tasks = array('generate', 'new_project', 'bootstrap');
+    private static $valid_tasks = array('generate', 'new_project', 'bootstrap', 'migrate');
 
     /**
      * List of valid command aliases and their corresponding command
@@ -31,6 +31,14 @@ class Inferno
     private static $commands_with_no_subjects = array('new_project', 'bootstrap');
 
     /**
+     * List of commands that take no name
+     *
+     * @access private
+     * @var array
+     */
+    private static $commands_with_no_name = array('bootstrap', 'migrate');
+
+    /**
      * List of valid column types supported by fire
      *
      * @access private
@@ -45,7 +53,10 @@ class Inferno
      * @access private
      * @var array
      */
-    private static $valid_subjects = array('controller', 'model', 'scaffold', 'migration');
+    private static $valid_subjects = array(
+        'generate' => array('controller', 'model', 'scaffold', 'migration'),
+        'migrate' => array('install', 'rollback'),
+    );
 
     // Prevent from instantiating the class.
     public function __construct()
@@ -174,25 +185,27 @@ class Inferno
             throw new InvalidArgumentException("Invalid task", INVALID_TASK_EXCEPTION);
         }
 
-        // TODO: Find a better name than "subject"
-        // TODO: Try to remove duplication.
-        if (!empty($args) && in_array($args[0], self::$valid_subjects))
+        if (!empty($args) && array_key_exists($parsed_args['command'], self::$valid_subjects) && in_array($args[0], self::$valid_subjects[$parsed_args['command']]))
         {
             $parsed_args['subject'] = $args[0];
             array_shift($args);
         }
         else if(self::has_subjects($parsed_args['command']))
         {
-            throw new InvalidArgumentException("Invalid subject", INVALID_SUBJECT_EXCEPTION);
+            if ($parsed_args['command'] !== 'migrate' && !in_array($args[0], self::$valid_subjects[$parsed_args['command']]))
+            {
+                throw new InvalidArgumentException("Invalid subject", INVALID_SUBJECT_EXCEPTION);
+            }
         }
 
         // The bootstrap command is the only one that is called without any additional args
-        if ($parsed_args['command'] != 'bootstrap' && empty($args))
+        if (self::has_a_name($parsed_args['command']))
         {
-            throw new InvalidArgumentException("Missing name", MISSING_NAME_EXCEPTION);
-        }
-        else
-        {
+            if (empty($args))
+            {
+                throw new InvalidArgumentException("Missing name", MISSING_NAME_EXCEPTION);
+            }
+
             $unparsed_name = array_shift($args);
 
             // NOTE: I have to use this $tmp variable in order to avoid getting a "Stict Standards" notice by php
@@ -203,18 +216,24 @@ class Inferno
             {
                 $parsed_args['filename'] = ApplicationHelpers::underscorify($unparsed_name) . ".php";
             }
-
         }
 
         if (!empty($args))
         {
-            if (in_array($parsed_args['subject'], array('model', 'migration')))
+            if ($parsed_args['command'] === 'generate')
             {
-                $parsed_args['extra'] = self::parse_table_columns($args);
+                if (in_array($parsed_args['subject'], array('model', 'migration')))
+                {
+                    $parsed_args['extra'] = self::parse_table_columns($args);
+                }
+                else
+                {
+                    $parsed_args['extra'] = $args;
+                }
             }
             else
             {
-                $parsed_args['extra'] = $args;
+                throw new InvalidArgumentException('Too many arguments');
             }
         }
 
@@ -247,6 +266,19 @@ class Inferno
     private static function has_subjects($command)
     {
         return !in_array($command, self::$commands_with_no_subjects);
+    }
+
+    /**
+     * Check if a command needs to take a name or not
+     *
+     * @access private
+     * @param string $command The command
+     * @return bool Wether or not the command has a name
+     * @author Aziz Light
+     */
+    private static function has_a_name($command)
+    {
+        return !in_array($command, self::$commands_with_no_name);
     }
 
     /**
