@@ -356,19 +356,70 @@ class FIRE_Migrate extends BaseCommand
 
     /**
      * Revert the CodeIgniter Patch
-     * @return void
+     *
+     * @access private
+     * @return bool Whether or not CodeIgniter was unpatched
      * @author Aziz Light
      **/
     private function unpatch_codeigniter()
     {
+        $result = FALSE;
+
         foreach ($this->files_to_patch as $file)
         {
             $file_location = FolderScanner::system_path() . 'core' . DIRECTORY_SEPARATOR . $file . '.php';
-            copy(BASE_PATH . DIRECTORY_SEPARATOR . 'temp' . DIRECTORY_SEPARATOR . $file . '.php', $file_location);
-            unlink(BASE_PATH . DIRECTORY_SEPARATOR . 'temp' . DIRECTORY_SEPARATOR . $file . '.php');
+            $result = $this->unpatch_codeigniter_file($file_location);
         }
 
-        return;
+        return $result;
+    }
+
+    /**
+     * Unpatch a codeigniter file
+     *
+     * @access private
+     * @param string $file_location The absolute path to the file to patch
+     * @return bool Whether the codeigniter file was unpatched or not.
+     * @author Aziz Light
+     */
+    private function unpatch_codeigniter_file($file_location)
+    {
+        $tmp = explode(DIRECTORY_SEPARATOR, $file_location);
+        $file_name = end($tmp);
+        $file = file_get_contents($file_location);
+
+        preg_match('/[\t ]*\/\/ Aziz Light is the boss!/', $file, $matches);
+        if (!empty($matches))
+        {
+            if ($file_name === 'Utf8.php')
+            {
+                $pattern  = '/\s*\/\/ Aziz Light is the boss!' . PHP_EOL;
+                $pattern .= '[\t ]*if \(\$CFG === NULL\)' . PHP_EOL;
+                $pattern .= '[\t ]*\{' . PHP_EOL;
+                $pattern .= '[\t ]*\$CFG =& load_class\(\'Config\', \'core\'\);' . PHP_EOL;
+                $pattern .= '[\t ]*\}' . PHP_EOL . '/';
+            }
+            else if ($file_name === 'Output.php')
+            {
+                $pattern  = '/\s*\/\/ Aziz Light is the boss!' . PHP_EOL;
+                $pattern .= '[\t ]*if \(\$CFG === NULL\)' . PHP_EOL;
+                $pattern .= '[\t ]*\{' . PHP_EOL;
+                $pattern .= '[\t ]*\$CFG =& load_class\(\'Config\', \'core\'\);' . PHP_EOL;
+                $pattern .= '[\t ]*\}' . PHP_EOL . PHP_EOL;
+                $pattern .= '[\t ]*if \(\$BM === NULL\)' . PHP_EOL;
+                $pattern .= '[\t ]*\{' . PHP_EOL;
+                $pattern .= '[\t ]*\$BM =& load_class\(\'Benchmark\', \'core\'\);' . PHP_EOL;
+                $pattern .= '[\t ]*\}' . PHP_EOL . '/';
+            }
+
+            $file = preg_replace($pattern, '', $file);
+
+            return file_put_contents($file_location, $file);
+        }
+        else
+        {
+            return TRUE;
+        }
     }
 
     /**
