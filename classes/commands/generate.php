@@ -56,7 +56,6 @@ class FIRE_Generate extends BaseCommand
      * The method that generates the controller
      *
      * @access private
-     * @param array $force_views_creation : Should the method force the creation of views? Used in the scaffold method.
      * @return void
      * @author Aziz Light
      */
@@ -69,6 +68,7 @@ class FIRE_Generate extends BaseCommand
             "parent_class"       => $this->args['parent_controller'],
             "extra"              => $this->extra,
         );
+
         $template    = new TemplateScanner("controller", $args);
         $controller  = $template->parse();
 
@@ -129,6 +129,7 @@ class FIRE_Generate extends BaseCommand
             "parent_class"       => $this->args['parent_model'],
             "extra"              => $this->extra,
         );
+
         $template = new TemplateScanner("model", $args);
         $model    = $template->parse();
 
@@ -280,28 +281,36 @@ class FIRE_Generate extends BaseCommand
         return true;
     }
 
-    // FIXME: Document this bitch!
+    /**
+     * Create a controller with its views and
+     * a model with its migration
+     *
+     * @access private
+     * @return void
+     * @author Aziz Light
+     */
     private function scaffold()
     {
-        if (isset($this->args['extras']))
+        if (isset($this->args['extra']))
         {
-            $message = "The following arguments were ignored: ";
-            if (php_uname("s") !== "Windows NT")
-            {
-                $message = ApplicationHelpers::colorize($message, 'red') . implode(", ", $this->args['extra']) . PHP_EOL;
-            }
-            else
-            {
-                $message .= implode(", ", $this->args['extra']) . PHP_EOL;
-            }
-            fwrite(STDOUT, $message);
+            $extra = $this->args['extra'];
             unset($this->args['extra']);
         }
+        else
+        {
+            $extra = array();
+        }
 
+        $this->args['name'] = Inflector::pluralize($this->args['name']);
+        $this->args['filename'] = $this->args['name'] . '.php';
         $this->args['extra'] = array('index', 'create', 'view', 'edit', 'delete');
+        $this->extra = $this->generate_controller_actions($this->args['name'], $this->args['extra']);
+        $this->controller();
 
-        $this->controller(true);
-
+        $this->args['name'] = Inflector::singularize($this->args['name']);
+        $this->args['filename'] = $this->args['name'] . '.php';
+        $this->args['extra'] = $extra;
+        $this->extra = $this->generate_migration_statement($this->args['name'], $this->args['extra']);
         $this->model();
     }
 
@@ -415,6 +424,7 @@ class FIRE_Generate extends BaseCommand
                 case 'controller':
                     $extra = $this->generate_controller_actions($args['name'], $args['extra']);
                     break;
+                case 'scaffold':
                 case 'model':
                     $extra = $this->generate_migration_statement($args['name'], $args['extra']);
                     break;

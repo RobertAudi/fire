@@ -212,6 +212,15 @@ class Inferno
             $tmp = explode(DIRECTORY_SEPARATOR, $unparsed_name);
             $parsed_args['name'] = end($tmp);
 
+            if (Inflector::is_plural($parsed_args['name']) && $parsed_args['command'] === 'generate' && in_array($parsed_args['subject'], array('model', 'scaffold', TRUE)))
+            {
+                $message = 'Fire thinks that your model name is plural.' . PHP_EOL;
+                $message .= 'If that\'s the case then you\'re probably doing it wrong...' . PHP_EOL;
+                $message .= 'Read the section on generating models or scaffolds in' . PHP_EOL;
+                $message .= 'the README for more info on the subject.' . PHP_EOL . PHP_EOL;
+                fwrite(STDOUT, $message);
+            }
+
             if ($parsed_args['command'] != 'new_project')
             {
                 $parsed_args['filename'] = ApplicationHelpers::underscorify($unparsed_name) . ".php";
@@ -222,7 +231,7 @@ class Inferno
         {
             if ($parsed_args['command'] === 'generate')
             {
-                if (in_array($parsed_args['subject'], array('model', 'migration')))
+                if (in_array($parsed_args['subject'], array('model', 'migration', 'scaffold')))
                 {
                     $parsed_args['extra'] = self::parse_table_columns($args);
                 }
