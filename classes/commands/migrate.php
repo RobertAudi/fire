@@ -291,35 +291,45 @@ class FIRE_Migrate extends BaseCommand
         $file_name = end($tmp);
         $file = file_get_contents($file_location);
 
-        if ($file_name === 'Utf8.php')
+        preg_match('/[\t ]*\/\/ Aziz Light is the boss!/', $file, $matches);
+        if (empty($matches))
         {
-            $pattern = '/(?P<whitespace>[\t ]*)global \$CFG;/';
-            preg_match($pattern, $file, $matches);
+            if ($file_name === 'Utf8.php')
+            {
+                $pattern = '/(?P<whitespace>[\t ]*)global \$CFG;/';
+                preg_match($pattern, $file, $matches);
 
-            $conditional  = $matches[0] . PHP_EOL;
-            $conditional .= PHP_EOL . $matches['whitespace'] . 'if ($CFG === NULL)' . PHP_EOL;
-            $conditional .= $matches['whitespace'] . '{' . PHP_EOL;
-            $conditional .= $matches['whitespace'] . '    ' . '$CFG =& load_class(\'Config\', \'core\');' . PHP_EOL;
-            $conditional .= $matches['whitespace'] . '}' . PHP_EOL;
+                $conditional  = $matches[0] . PHP_EOL;
+                $conditional .= PHP_EOL . $matches['whitespace'] . '// Aziz Light is the boss!' . PHP_EOL;
+                $conditional .= $matches['whitespace'] . 'if ($CFG === NULL)' . PHP_EOL;
+                $conditional .= $matches['whitespace'] . '{' . PHP_EOL;
+                $conditional .= $matches['whitespace'] . '    ' . '$CFG =& load_class(\'Config\', \'core\');' . PHP_EOL;
+                $conditional .= $matches['whitespace'] . '}' . PHP_EOL;
+            }
+            else if ($file_name === 'Output.php')
+            {
+                $pattern = '/(?P<whitespace>[\t ]*)global \$BM, \$CFG;/';
+                preg_match($pattern, $file, $matches);
+
+                $conditional  = $matches[0] . PHP_EOL;
+                $conditional .= PHP_EOL . $matches['whitespace'] . '// Aziz Light is the boss!' . PHP_EOL;
+                $conditional .= $matches['whitespace'] . 'if ($CFG === NULL)' . PHP_EOL;
+                $conditional .= $matches['whitespace'] . '{' . PHP_EOL;
+                $conditional .= $matches['whitespace'] . '    ' . '$CFG =& load_class(\'Config\', \'core\');' . PHP_EOL;
+                $conditional .= $matches['whitespace'] . '}' . PHP_EOL;
+                $conditional .= PHP_EOL . $matches['whitespace'] . 'if ($BM === NULL)' . PHP_EOL;
+                $conditional .= $matches['whitespace'] . '{' . PHP_EOL;
+                $conditional .= $matches['whitespace'] . '    ' . '$BM =& load_class(\'Benchmark\', \'core\');' . PHP_EOL;
+                $conditional .= $matches['whitespace'] . '}' . PHP_EOL;
+            }
+
+            $file = preg_replace($pattern, $conditional, $file);
+            return file_put_contents($file_location, $file);
         }
-        else if ($file_name === 'Output.php')
+        else
         {
-            $pattern = '/(?P<whitespace>[\t ]*)global \$BM, \$CFG;/';
-            preg_match($pattern, $file, $matches);
-
-            $conditional  = $matches[0] . PHP_EOL;
-            $conditional .= PHP_EOL . $matches['whitespace'] . 'if ($CFG === NULL)' . PHP_EOL;
-            $conditional .= $matches['whitespace'] . '{' . PHP_EOL;
-            $conditional .= $matches['whitespace'] . '    ' . '$CFG =& load_class(\'Config\', \'core\');' . PHP_EOL;
-            $conditional .= $matches['whitespace'] . '}' . PHP_EOL;
-            $conditional .= PHP_EOL . $matches['whitespace'] . 'if ($BM === NULL)' . PHP_EOL;
-            $conditional .= $matches['whitespace'] . '{' . PHP_EOL;
-            $conditional .= $matches['whitespace'] . '    ' . '$BM =& load_class(\'Benchmark\', \'core\');' . PHP_EOL;
-            $conditional .= $matches['whitespace'] . '}' . PHP_EOL;
+            return TRUE;
         }
-
-        $file = preg_replace($pattern, $conditional, $file);
-        return file_put_contents($file_location, $file);
     }
 
     /**
