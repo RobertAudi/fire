@@ -212,7 +212,7 @@ class Inferno
             $tmp = explode(DIRECTORY_SEPARATOR, $unparsed_name);
             $parsed_args['name'] = end($tmp);
 
-            if (Inflector::is_plural($parsed_args['name']) && $parsed_args['command'] === 'generate' && in_array($parsed_args['subject'], array('model', 'scaffold', TRUE)))
+            if (Inflector::is_plural($parsed_args['name']) && $parsed_args['command'] === 'generate' && in_array($parsed_args['subject'], array('model', 'scaffold' ), TRUE))
             {
                 $message = 'Fire thinks that your model name is plural.' . PHP_EOL;
                 $message .= 'If that\'s the case then you\'re probably doing it wrong...' . PHP_EOL;
