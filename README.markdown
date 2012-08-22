@@ -58,6 +58,9 @@ If you don't specify a name for the controller you want to create, ***fire*** wi
 This will also create a controller. Notice that the `g` alias is
 available to the lazy people out there too!
 
+Finally, you can specify the `--parent` option along with the name of a
+class to change the parent controller.
+
 #### Create a model
 
     fire g model post title:string body:text created_at:datetime updated_at:datetime
@@ -74,6 +77,10 @@ This will also create a model, however the user will be asked to enter a
 name. NOTE: When creating a model, the `migration_version` configuration
 will be incremented by one in `application/config/migration.php`.
 
+Finally, you can specify the `--parent` option along with the name of a
+class to change the parent model. You can also specify the
+`--parent-migration` option to chage the parent of the migration class.
+
 ### Create a migration
 
     fire g migration add_author_to_posts author:string
@@ -83,6 +90,9 @@ This command will generate a blank migration with the name
 
 In a future release the migration's content will be generated according
 to the name of the migration.
+
+Finally, you can specify the `--parent-migration` option along with the name of a
+class to change the parent migration.
 
 ### Migrate the database
 
