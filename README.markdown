@@ -58,6 +58,14 @@ If you don't specify a name for the controller you want to create, ***fire*** wi
 This will also create a controller. Notice that the `g` alias is
 available to the lazy people out there too!
 
+You can also create nested controllers, that is, controllers inside
+subfolders:
+
+    fire g controller admin/users index
+
+This will create the admin folder in the controllers and the views
+folders if they don't exits.
+
 Finally, you can specify the `--parent` option along with the name of a
 class to change the parent controller.
 
@@ -76,6 +84,10 @@ Same principle for the model, no need to a name:
 This will also create a model, however the user will be asked to enter a
 name. NOTE: When creating a model, the `migration_version` configuration
 will be incremented by one in `application/config/migration.php`.
+
+You can also create nested models, that is, models inside subfolders:
+
+    fire g model admin/user name:string
 
 Finally, you can specify the `--parent` option along with the name of a
 class to change the parent model. You can also specify the
