@@ -6,6 +6,14 @@
 class Inferno
 {
     /**
+     * List of valid options without the -- at hte beginning
+     *
+     * @access private
+     * @var array
+     */
+    private static $valid_options = array('parent', 'parent-migration');
+
+    /**
      * List of valid arguments
      *
      * @access private
@@ -72,10 +80,13 @@ class Inferno
             throw new InvalidArgumentException('Argument 1 passed to Inferno::init() must be an array');
         }
 
+        // First parse the options and remove them
+        // from the $args array
+        $options = self::parse_options($args);
+
         // Parse the arguments
         $args = self::parse($args);
 
-        // FIXME: Move this to the new command, it doesn't belong here
         if ($args['command'] == 'new_project')
         {
             if (is_dir(getcwd() . DIRECTORY_SEPARATOR . $args['name']))
@@ -114,6 +125,9 @@ class Inferno
 
         // Merge the config and args arrays
         $args = array_merge($config, $args);
+
+        // Merge the options and args arrays
+        $args = array_merge($args, $options);
 
         // Example: new Generate()
         // Example: new NewCommand()
@@ -368,5 +382,38 @@ class Inferno
         }
 
         return $attributes;
+    }
+
+    /**
+     * Parse the options in the $args array
+     * and get their value. Also remove the options
+     * and their value from the $args array
+     *
+     * @access private
+     * @params array $args The array of args
+     * @return array The options and their value
+     * @author Aziz Light
+     **/
+    private static function parse_options(array &$args)
+    {
+        $options = array();
+
+        foreach ($args as $index => $arg)
+        {
+            if (in_array(substr($arg, 2), self::$valid_options))
+            {
+                if (isset($args[$index + 1]))
+                {
+                    $options[str_replace('-', '_', substr($arg, 2))] = $args[$index + 1];
+                    array_splice($args, $index, 2);
+                }
+                else
+                {
+                    throw new InvalidArgumentException('You passed the ' . $arg . ' option but did\'t give it a value');
+                }
+            }
+        }
+
+        return $options;
     }
 }

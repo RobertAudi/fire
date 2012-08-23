@@ -82,7 +82,7 @@ class FIRE_Generate extends BaseCommand
             "class_name"         => ApplicationHelpers::camelize($this->args['name']),
             "filename"           => $this->args['filename'],
             "application_folder" => $this->args['application_folder'],
-            "parent_class"       => $this->args['parent_controller'],
+            "parent_class"       => (isset($this->args['parent'])) ? $this->args['parent'] : $this->args['parent_controller'],
             "extra"              => $this->extra,
             'relative_location'  => $relative_location
         );
@@ -164,7 +164,7 @@ class FIRE_Generate extends BaseCommand
             "class_name"         => ucfirst(strtolower($this->args['name'])),
             "filename"           => $this->args['filename'],
             "application_folder" => $this->args['application_folder'],
-            "parent_class"       => $this->args['parent_model'],
+            "parent_class"       => (isset($this->args['parent'])) ? $this->args['parent'] : $this->args['parent_model'],
             "extra"              => $this->extra,
             'relative_location'  => $relative_location,
         );
