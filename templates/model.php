@@ -15,4 +15,4 @@ class {{class_name}} extends {{parent_class}}
 } // End of the {{class_name}}
 
 /* End of file {{filename}} */
-/* Location {{application_folder}}/models/{{filename}} */
+/* Location {{relative_location}} */

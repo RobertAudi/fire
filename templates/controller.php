@@ -17,4 +17,4 @@ class {{class_name}} extends {{parent_class}}
 } // End of the {{class_name}}
 
 /* End of file {{filename}} */
-/* Location {{application_folder}}/controllers/{{filename}} */
+/* Location {{relative_location}} */

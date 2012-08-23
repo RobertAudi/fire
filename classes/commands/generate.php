@@ -61,19 +61,34 @@ class FIRE_Generate extends BaseCommand
      */
     private function controller()
     {
+        $location = $this->args["location"] . DIRECTORY_SEPARATOR . 'controllers' . DIRECTORY_SEPARATOR;
+        $relative_location = $this->args['application_folder'] . DIRECTORY_SEPARATOR . 'controllers' . DIRECTORY_SEPARATOR;
+
+        if (!empty($this->args['subdirectories']))
+        {
+            $location .= $this->args['subdirectories'] . DIRECTORY_SEPARATOR;
+            $relative_location .= $this->args['subdirectories'] . DIRECTORY_SEPARATOR;
+        }
+
+        if (!is_dir($location))
+        {
+            mkdir($location, 0755, TRUE);
+        }
+
+        $relative_location .= $this->args['filename'];
+        $filename = $location . $this->args['filename'];
+
         $args = array(
             "class_name"         => ApplicationHelpers::camelize($this->args['name']),
             "filename"           => $this->args['filename'],
             "application_folder" => $this->args['application_folder'],
             "parent_class"       => $this->args['parent_controller'],
             "extra"              => $this->extra,
+            'relative_location'  => $relative_location
         );
 
         $template    = new TemplateScanner("controller", $args);
         $controller  = $template->parse();
-
-        $location = $this->args["location"] . DIRECTORY_SEPARATOR . 'controllers' . DIRECTORY_SEPARATOR;
-        $filename = $location . $this->args['filename'];
 
         $message = "\t";
         if (file_exists($filename))
@@ -83,7 +98,7 @@ class FIRE_Generate extends BaseCommand
             {
                 $message  = ApplicationHelpers::colorize($message, 'light_blue');
             }
-            $message .= $this->args['application_folder'] . DIRECTORY_SEPARATOR . 'controllers' . DIRECTORY_SEPARATOR . $this->args['filename'];
+            $message .= $relative_location;
         }
         elseif (file_put_contents($filename, $controller))
         {
@@ -92,7 +107,7 @@ class FIRE_Generate extends BaseCommand
             {
                 $message  = ApplicationHelpers::colorize($message, 'green');
             }
-            $message .= $this->args['application_folder'] . DIRECTORY_SEPARATOR . 'controllers' . DIRECTORY_SEPARATOR . $this->args['filename'];
+            $message .= $relative_location;
         }
         else
         {
@@ -101,7 +116,7 @@ class FIRE_Generate extends BaseCommand
             {
                 $message  = ApplicationHelpers::colorize($message, 'red');
             }
-            $message .= $this->args['application_folder'] . DIRECTORY_SEPARATOR . 'controllers' . DIRECTORY_SEPARATOR . $this->args['filename'];
+            $message .= $relative_location;
         }
 
         // The controller has been generated, output the confirmation message
@@ -122,19 +137,40 @@ class FIRE_Generate extends BaseCommand
      */
     private function model()
     {
+        $location = $this->args["location"] . DIRECTORY_SEPARATOR . 'models' . DIRECTORY_SEPARATOR;
+        $relative_location = $this->args['application_folder'] . DIRECTORY_SEPARATOR . 'models' . DIRECTORY_SEPARATOR;
+        $class_name = '';
+
+        if (!empty($this->args['subdirectories']))
+        {
+            $location .= $this->args['subdirectories'] . DIRECTORY_SEPARATOR;
+            $relative_location .= $this->args['subdirectories'] . DIRECTORY_SEPARATOR;
+
+            $tmp = explode(DIRECTORY_SEPARATOR, $this->args['subdirectories']);
+            $tmp = join('_', $tmp);
+            $class_name .= ApplicationHelpers::camelize($tmp);
+        }
+
+        if (!is_dir($location))
+        {
+            mkdir($location, 0755, TRUE);
+        }
+
+        $relative_location .= $this->args['filename'];
+        $filename = $location . $this->args['filename'];
+        $class_name .= ucfirst(strtolower($this->args['name']));
+
         $args = array(
             "class_name"         => ucfirst(strtolower($this->args['name'])),
             "filename"           => $this->args['filename'],
             "application_folder" => $this->args['application_folder'],
             "parent_class"       => $this->args['parent_model'],
             "extra"              => $this->extra,
+            'relative_location'  => $relative_location,
         );
 
         $template = new TemplateScanner("model", $args);
         $model    = $template->parse();
-
-        $location = $this->args["location"] . "/models/";
-        $filename = $location . $this->args['filename'];
 
         $message = "\t";
         if (file_exists($filename))
@@ -144,7 +180,7 @@ class FIRE_Generate extends BaseCommand
             {
                 $message  = ApplicationHelpers::colorize($message, 'light_blue');
             }
-            $message .= $this->args['application_folder'] . DIRECTORY_SEPARATOR . 'models' . DIRECTORY_SEPARATOR . $this->args['filename'];
+            $message .= $relative_location;
         }
         elseif (file_put_contents($filename, $model))
         {
@@ -153,7 +189,7 @@ class FIRE_Generate extends BaseCommand
             {
                 $message  = ApplicationHelpers::colorize($message, 'green');
             }
-            $message .= $this->args['application_folder'] . DIRECTORY_SEPARATOR . 'models' . DIRECTORY_SEPARATOR . $this->args['filename'];
+            $message .= $relative_location;
         }
         else
         {
@@ -162,7 +198,7 @@ class FIRE_Generate extends BaseCommand
             {
                 $message  = ApplicationHelpers::colorize($message, 'red');
             }
-            $message .= $this->args['application_folder'] . DIRECTORY_SEPARATOR . 'models' . DIRECTORY_SEPARATOR . $this->args['filename'];
+            $message .= $relative_location;
         }
 
         fwrite(STDOUT, $message . PHP_EOL);
@@ -190,12 +226,22 @@ class FIRE_Generate extends BaseCommand
         }
 
         // Check that the views folder exists and create it if it doesn't
-        $views_folder = $this->args['application_folder'] . DIRECTORY_SEPARATOR . 'views' . DIRECTORY_SEPARATOR . strtolower($controller);
-        $location = $this->args['location'] . DIRECTORY_SEPARATOR . 'views' . DIRECTORY_SEPARATOR . strtolower($controller);
+        $location = $this->args['location'] . DIRECTORY_SEPARATOR . 'views' . DIRECTORY_SEPARATOR;
+        $views_folder = $this->args['application_folder'] . DIRECTORY_SEPARATOR . 'views' . DIRECTORY_SEPARATOR;
+
+        if (!empty($this->args['subdirectories']))
+        {
+            $location .= $this->args['subdirectories'] . DIRECTORY_SEPARATOR;
+            $views_folder .= $this->args['subdirectories'] . DIRECTORY_SEPARATOR;
+        }
+
+        $location .= strtolower($controller);
+        $views_folder .= strtolower($controller);
+
         if (!file_exists($location) || !is_dir($location))
         {
             $message = "\t";
-            if (mkdir($location, 0755))
+            if (mkdir($location, 0755, TRUE))
             {
                 $message .= 'Created folder: ';
                 if (php_uname("s") !== "Windows NT")
@@ -334,10 +380,22 @@ class FIRE_Generate extends BaseCommand
 
         if ($calling_function === "model")
         {
+            $class_name = 'Migration_Add_';
+            $filename = 'add_';
+            $table_name = '';
+
+            if (!empty($this->args['subdirectories']))
+            {
+                $dirs = explode(DIRECTORY_SEPARATOR, $this->args['subdirectories']);
+                $dirs = join('_', $dirs);
+                $class_name .= strtolower($dirs) . '_';
+                $filename .= strtolower($dirs) . '_';
+                $table_name .= strtolower($dirs) . '_';
+            }
             $args = array(
-                'class_name'         => 'Migration_Add_' . Inflector::pluralize($this->args['name']),
-                'table_name'         => Inflector::pluralize(strtolower($this->args['name'])),
-                'filename'           => 'add_' . Inflector::pluralize(ApplicationHelpers::underscorify($this->args['name'])) . '.php',
+                'class_name'         => $class_name . Inflector::pluralize($this->args['name']),
+                'table_name'         => $table_name . Inflector::pluralize(strtolower($this->args['name'])),
+                'filename'           => $filename . Inflector::pluralize(ApplicationHelpers::underscorify($this->args['name'])) . '.php',
                 'application_folder' => $this->args['application_folder'],
                 'parent_class'       => $this->args['parent_migration'],
                 'extra'              => $this->extra
@@ -422,7 +480,7 @@ class FIRE_Generate extends BaseCommand
             switch ($args['subject'])
             {
                 case 'controller':
-                    $extra = $this->generate_controller_actions($args['name'], $args['extra']);
+                    $extra = $this->generate_controller_actions($args['name'], $args['subdirectories'], $args['extra']);
                     break;
                 case 'scaffold':
                 case 'model':
@@ -446,7 +504,7 @@ class FIRE_Generate extends BaseCommand
      * @return string : The generated actions
      * @author Aziz Light
      */
-    private function generate_controller_actions($class_name, array $actions)
+    private function generate_controller_actions($class_name, $subdirectories, array $actions)
     {
         $extra = "";
 
@@ -456,6 +514,16 @@ class FIRE_Generate extends BaseCommand
                 "class_name" => $class_name,
                 "extra" => $action
             );
+
+            $args['view_folder'] = "";
+
+            if (!empty($subdirectories))
+            {
+                $args['view_folder'] = $subdirectories . DIRECTORY_SEPARATOR;
+            }
+
+            $args['view_folder'] .= strtolower($args['class_name']);
+
             $template = new TemplateScanner("actions", $args);
             $extra   .= $template->parse();
             unset($args, $template);

@@ -22,6 +22,14 @@ class TemplateScanner
     private $class_name;
 
     /**
+     * The folder where the views will be saved
+     *
+     * @access private
+     * @var string
+     */
+    private $view_folder;
+
+    /**
      * The name of the table to migrate.
      * Used with migrations only.
      *
@@ -64,6 +72,14 @@ class TemplateScanner
     private $application_folder;
 
     /**
+     * Relative location to the templated file
+     *
+     * @access private
+     * @var string
+     */
+    private $relative_location;
+
+    /**
      * The constructor.
      *
      * @param string $template_name The template name without the extension.
@@ -91,16 +107,18 @@ class TemplateScanner
               "/{{filename}}/",
               "/{{table_name}}/",
               "/{{application_folder}}/",
+              "/{{relative_location}}/"
             );
 
             $replacements = array(
               $this->class_name,
               $this->parent_class,
-   strtolower($this->class_name),
+              $this->view_folder,
               $this->extra,
               $this->filename,
               $this->table_name,
               $this->application_folder,
+              $this->relative_location,
             );
             return preg_replace($patterns, $replacements, $template);
         }
@@ -149,6 +167,8 @@ class TemplateScanner
                 "filename"           => 'my_' . $this->template_name . '.php',
                 "table_name"         => "my_table",
                 "application_folder" => "application",
+                'view_folder'        => strtolower($this->template_name),
+                'relative_location'  => 'application' . DIRECTORY_SEPARATOR . 'my_' . $this->template_name . '.php',
             );
 
             foreach ($valid_attributes as $valid_attribute => $default_value)

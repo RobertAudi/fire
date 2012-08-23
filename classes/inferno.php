@@ -210,7 +210,8 @@ class Inferno
 
             // NOTE: I have to use this $tmp variable in order to avoid getting a "Stict Standards" notice by php
             $tmp = explode(DIRECTORY_SEPARATOR, $unparsed_name);
-            $parsed_args['name'] = end($tmp);
+            $parsed_args['name'] = array_pop($tmp);
+            $parsed_args['subdirectories'] = join(DIRECTORY_SEPARATOR, $tmp);
 
             if (Inflector::is_plural($parsed_args['name']) && $parsed_args['command'] === 'generate' && in_array($parsed_args['subject'], array('model', 'scaffold' ), TRUE))
             {
@@ -223,7 +224,7 @@ class Inferno
 
             if ($parsed_args['command'] != 'new_project')
             {
-                $parsed_args['filename'] = ApplicationHelpers::underscorify($unparsed_name) . ".php";
+                $parsed_args['filename'] = ApplicationHelpers::underscorify($parsed_args['name']) . ".php";
             }
         }
 
