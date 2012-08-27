@@ -19,7 +19,7 @@ class Inferno
      * @access private
      * @var array
      */
-    private static $valid_tasks = array('generate', 'new_project', 'bootstrap', 'migrate');
+    private static $valid_tasks = array('generate', 'new_project', 'bootstrap', 'migrate', 'web_fire');
 
     /**
      * List of valid command aliases and their corresponding command
@@ -27,8 +27,9 @@ class Inferno
      * @access private
      * @var array
      */
-    private static $valid_aliases = array('g' => 'generate',
-                                          'new' => 'new_project');
+    private static $valid_aliases = array('g'   => 'generate',
+                                          'new' => 'new_project',
+                                          'web' => 'web_fire');
 
     /**
      * List of commands that take no subject
@@ -44,7 +45,7 @@ class Inferno
      * @access private
      * @var array
      */
-    private static $commands_with_no_name = array('bootstrap', 'migrate');
+    private static $commands_with_no_name = array('bootstrap', 'migrate', 'web_fire');
 
     /**
      * List of valid column types supported by fire
@@ -64,6 +65,7 @@ class Inferno
     private static $valid_subjects = array(
         'generate' => array('controller', 'model', 'scaffold', 'migration'),
         'migrate' => array('install', 'rollback'),
+        'web_fire' => array('install'),
     );
 
     // Prevent from instantiating the class.
@@ -206,7 +208,7 @@ class Inferno
         }
         else if(self::has_subjects($parsed_args['command']))
         {
-            if ($parsed_args['command'] !== 'migrate' && !in_array($args[0], self::$valid_subjects[$parsed_args['command']]))
+            if ($parsed_args['command'] !== 'migrate' && (empty($args) || !in_array($args[0], self::$valid_subjects[$parsed_args['command']])))
             {
                 throw new InvalidArgumentException("Invalid subject", INVALID_SUBJECT_EXCEPTION);
             }

@@ -33,7 +33,7 @@ require_once BASE_PATH . DIRECTORY_SEPARATOR . 'classes' . DIRECTORY_SEPARATOR .
 // Lazy-load the commands
 function __autoload($command)
 {
-    $valid_commands = array('FIRE_Bootstrap', 'FIRE_Generate', 'FIRE_Migrate', 'FIRE_NewProject');
+    $valid_commands = array('FIRE_Bootstrap', 'FIRE_Generate', 'FIRE_Migrate', 'FIRE_NewProject', 'FIRE_WebFire');
 
     if (in_array($command, $valid_commands))
     {
