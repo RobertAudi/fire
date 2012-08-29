@@ -5,17 +5,40 @@ This little script lets you generate controllers and models very easily in your 
 on that and will release an OS-agnostic version as soon as possible.
 
 ## Installation
-The first thing you have to do after cloning the project is to add the `fire` folder to your `PATH`. In Unix-based systems, add the following line to `.bashrc`, `.bash_profile`, `.zshrc` or the like: (In OS X)
+The first thing to do is to make sure that php is in you `$PATH`. On OS
+X, assuming that you are using MAMP, here are the steps:
 
-    PATH=/path/to/the/fire/folder:$PATH
+Open one of the following files in your favourite text editor: `.bash_profile`,
+`.bashrc` or `.zshrc` depending on the shell you are using and add the following
+line at the bottom of the file:
 
-Also, make sure that the `fire` script (found in the `fire` folder) is executable. On Unix-based systems (from the command line):
+    PATH=Applications/MAMP/bin/php/php5.4.4/bin:$PATH
 
-    chmod a+x fire
+Depending on the version of MAMP you are using the path to the bin
+directory may change.
 
-**NOTE**: In order for `fire` to work, you should have `php-cli` and it
-should be in your `PATH`. If you're using MAMP, XAMPP, or WAMP then you
-just have to add php to your `PATH`.
+On Windows 7, from the Desktop, right-click on `Computer`, then click on
+`Advanced system settings` in the sidebar and click on `Environment
+Variables...` at the bottm of the window that appeared. In the `System
+variables` section, scroll down to find the `Path` variable,
+double-click on that and append the path to the directory where the
+`php` executable lives. Note that paths are separated by a `;`. If
+you're using XAMPP then your `Path` variable should look similar to this
+now:
+
+    ...;C:\xampp\php
+
+Next, download fire and put it somewhere safe. Now, you need to add an alias to fire.
+In OS X, add this line to your `.bash_profile`, `.bashrc` or `.zshrc`:
+
+    alias fire="php path/to/fire/fire"
+
+Note that `path/to/fire/fire` is the path to the fire executable that
+comes with fire, not the fire directory itself.
+
+On Windows, you can either follow the same steps if you can a Unix
+environment installed (eg: Cygwin) or you can follow the steps in this
+link to do something similar: http://superuser.com/a/49194/10801
 
 ## Basic usage
 Fire works out of the box, all you have to do is open a terminal window
