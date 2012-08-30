@@ -122,10 +122,120 @@ class FIRE_Generate extends BaseCommand
         // The controller has been generated, output the confirmation message
         fwrite(STDOUT, $message . PHP_EOL);
 
+        // Create the helper files.
+        $this->helpers();
+
         // Create the view files.
         $this->views();
 
         return;
+    }
+
+    /**
+     * The method that generates helpers
+     *
+     * @access private
+     * @return void
+     * @author Aziz Light
+     **/
+    private function helpers()
+    {
+        $relative_location = $this->args['application_folder'] . DIRECTORY_SEPARATOR . 'helpers' . DIRECTORY_SEPARATOR;
+        $helper_directory = $this->args['location'] . DIRECTORY_SEPARATOR . 'helpers' . DIRECTORY_SEPARATOR;
+        if (!empty($this->args['subdirectories']))
+        {
+            $relative_location .= $this->args['subdirectories'];
+            $helper_directory .= $this->args['subdirectories'] . DIRECTORY_SEPARATOR;
+        }
+        $relative_helper_location = $relative_location . DIRECTORY_SEPARATOR . strtolower($this->args['name']) . '_helper.php';
+        $helper_file = $helper_directory . strtolower($this->args['name']) . '_helper.php';
+
+        if (!is_dir($helper_directory))
+        {
+            $message = "\t";
+            if (mkdir($helper_directory, 0755, TRUE))
+            {
+                $message .= 'Created folder: ';
+                if (php_uname("s") !== "Windows NT")
+                {
+                    $message  = ApplicationHelpers::colorize($message, 'green') . $relative_location;
+                }
+                else
+                {
+                    $message .= $relative_location;
+                }
+                fwrite(STDOUT, $message . PHP_EOL);
+                unset($message);
+            }
+            else
+            {
+                $message .= 'Unable to create folder: ';
+                if (php_uname("s") !== "Windows NT")
+                {
+                    $message  = ApplicationHelpers::colorize($message, 'red') . $relative_location;
+                }
+                else
+                {
+                    $message .= $relative_location;
+                }
+                fwrite(STDOUT, $message . PHP_EOL);
+                return false;
+            }
+        }
+
+        if (file_exists($helper_file))
+        {
+            $message = "\tHelper already exists: ";
+            if (php_uname("s") !== "Windows NT")
+            {
+                $message = ApplicationHelpers::colorize($message, 'light_blue') . $relative_helper_location;
+            }
+            else
+            {
+                $message .= $relative_helper_location;
+            }
+            fwrite(STDOUT, $message . PHP_EOL);
+            unset($message);
+            return true;
+        }
+        else
+        {
+            $content  = "<?php if ( ! defined('BASEPATH')) exit('No direct script access allowed');" . PHP_EOL;
+            $content .= PHP_EOL . PHP_EOL . PHP_EOL;
+            $content .= '/* End of file ' . strtolower($this->args['name']) . '_helper.php */' . PHP_EOL;
+            $content .= '/* Location: ./' . $relative_location . ' */';
+
+            $message = "\t";
+            if (file_put_contents($helper_file, $content))
+            {
+                $message .= 'Created helper: ';
+                if (php_uname("s") !== "Windows NT")
+                {
+                    $message  = ApplicationHelpers::colorize($message, 'green') . $relative_helper_location;
+                }
+                else
+                {
+                    $message  .= $relative_helper_location;
+                }
+            }
+            else
+            {
+                $message .= 'Unable to create helper: ';
+                if (php_uname("s") !== "Windows NT")
+                {
+                    $message  = ApplicationHelpers::colorize($message, 'red') . $relative_helper_location;
+                }
+                else
+                {
+                    $message  .= $relative_helper_location;
+                }
+            }
+
+            fwrite(STDOUT, $message . PHP_EOL);
+            unset($message);
+        }
+
+        return true;
     }
 
     /**
