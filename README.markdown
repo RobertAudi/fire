@@ -72,7 +72,9 @@ need to use the same form, ie: `username/repo` or `organisation/repo`.
     fire generate controller posts index show new edit delete
 
 This command will create a posts controller in the controllers folder
-and will add the index, show, new, edit and delete actions to it.
+and will add the index, show, new, edit and delete actions to it. It
+will also create a `posts_helper` helper, a views folder for the
+controller and views for each action.
 
 If you don't specify a name for the controller you want to create, ***fire*** will ask you to enter one!
 
@@ -86,7 +88,7 @@ subfolders:
 
     fire g controller admin/users index
 
-This will create the admin folder in the controllers and the views
+This will create the admin folder in the controllers, helpers and the views
 folders if they don't exits.
 
 Finally, you can specify the `--parent` option along with the name of a
