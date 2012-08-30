@@ -92,6 +92,20 @@ folders if they don't exits.
 Finally, you can specify the `--parent` option along with the name of a
 class to change the parent controller.
 
+#### Create views
+
+If you generated a blank controller with fire and added actions to it later on,
+or if you created a controller manually and can't be bothered to create
+a view for each action manually, fire lets you generate views for those actions!
+All you have to do is to call the views generator with the name of the
+controller in question:
+
+    fire g views users
+
+This will generate a view for each **public** action in the users
+controller. **NOTE:** Actions that start with an underscore (`_`) are not
+considered public.
+
 #### Create a model
 
     fire g model post title:string body:text created_at:datetime updated_at:datetime
