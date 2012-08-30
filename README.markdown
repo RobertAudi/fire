@@ -106,6 +106,15 @@ This will generate a view for each **public** action in the users
 controller. **NOTE:** Actions that start with an underscore (`_`) are not
 considered public.
 
+You can limit the views generation by giving a list of views to
+generate. **NOTE:** By doing this, you can force the generation of views
+for non-public actions:
+
+    fire g views users index show
+
+This code snippet will only generate views for the listed actions,
+namely: index and show.
+
 #### Create a model
 
     fire g model post title:string body:text created_at:datetime updated_at:datetime
