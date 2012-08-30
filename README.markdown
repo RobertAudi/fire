@@ -143,6 +143,13 @@ without any efforts:
     fire migrate
     fire migrate rollback
 
+## Integration with WebFire
+
+Fire can install its web-based stand-alone version, WebFire. One command
+is available to do just that:
+
+    fire web install
+
 ## Changelog
 
 **NOTE**: For all the new changes, check the git commits please.
