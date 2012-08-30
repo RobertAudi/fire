@@ -222,7 +222,28 @@ class FIRE_Generate extends BaseCommand
 
         if (empty($views))
         {
-            return true;
+            if ($this->args['subject'] === 'views')
+            {
+                $controller_location = $this->args['location'] . DIRECTORY_SEPARATOR . 'controllers' . DIRECTORY_SEPARATOR;
+                if (!empty($this->args['subdirectories']))
+                {
+                    $controller_location .= $this->args['subdirectories'] . DIRECTORY_SEPARATOR;
+                }
+                $controller_location .= $this->args['filename'];
+
+                if (is_file($controller_location))
+                {
+                    $views = $this->get_controller_actions($controller_location);
+                }
+                else
+                {
+                    return true;
+                }
+            }
+            else
+            {
+                return true;
+            }
         }
 
         // Check that the views folder exists and create it if it doesn't
@@ -493,6 +514,29 @@ class FIRE_Generate extends BaseCommand
         }
 
         return $extra;
+    }
+
+    /**
+     * Parse a controller and returns a list of public actions
+     *
+     * @access private
+     * @param string $controller_location The path to the controller to parse
+     * @return array The public controller actions or an empty array
+     * @author Aziz Light
+     */
+    private function get_controller_actions($controller_location)
+    {
+        $controller = file_get_contents($controller_location);
+        $regex = '/^\s*(?:public )?function (?P<action>[a-zA-Z]+(?:_?[a-zA-Z0-9]+)*)/m';
+        preg_match_all($regex, $controller, $matches);
+        if (!empty($matches['action']))
+        {
+            return $matches['action'];
+        }
+        else
+        {
+            return array();
+        }
     }
 
     /**

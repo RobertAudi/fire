@@ -63,7 +63,7 @@ class Inferno
      * @var array
      */
     private static $valid_subjects = array(
-        'generate' => array('controller', 'model', 'scaffold', 'migration'),
+        'generate' => array('controller', 'model', 'scaffold', 'migration', 'views'),
         'migrate' => array('install', 'rollback'),
         'web_fire' => array('install'),
     );
