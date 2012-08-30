@@ -492,7 +492,7 @@ class FIRE_Generate extends BaseCommand
      */
     private function generate_extra(array $args)
     {
-        if (!array_key_exists('extra', $args) || !is_array($args['extra']) || empty($args['extra']))
+        if (!array_key_exists('extra', $args) || !is_array($args['extra']) || empty($args['extra']) || $args['subject'] === 'views')
         {
             $extra = '';
         }
