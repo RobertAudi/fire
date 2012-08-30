@@ -143,14 +143,6 @@ without any efforts:
     fire migrate
     fire migrate rollback
 
-### Create a scaffold
-
-    fire g scaffold posts
-
-This is a combination of all the above. **HOWEVER, it has not been
-tested thoroughly!** I released this feature as a preview of what is
-coming next.
-
 ## Changelog
 
 **NOTE**: For all the new changes, check the git commits please.
