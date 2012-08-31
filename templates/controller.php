@@ -12,6 +12,7 @@ class {{class_name}} extends {{parent_class}}
     public function __construct()
     {
       parent::__construct();
+      $this->load->helper('{{helper_name}}');
     }
 {{extra}}
 } // End of the {{class_name}}

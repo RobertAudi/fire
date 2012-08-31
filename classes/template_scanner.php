@@ -80,6 +80,14 @@ class TemplateScanner
     private $relative_location;
 
     /**
+     * Name of the helper associated with the controller
+     *
+     * @access private
+     * @var string
+     */
+    private $helper_name;
+
+    /**
      * The constructor.
      *
      * @param string $template_name The template name without the extension.
@@ -107,7 +115,8 @@ class TemplateScanner
               "/{{filename}}/",
               "/{{table_name}}/",
               "/{{application_folder}}/",
-              "/{{relative_location}}/"
+              "/{{relative_location}}/",
+              "/{{helper_name}}/"
             );
 
             $replacements = array(
@@ -119,6 +128,7 @@ class TemplateScanner
               $this->table_name,
               $this->application_folder,
               $this->relative_location,
+              $this->helper_name
             );
             return preg_replace($patterns, $replacements, $template);
         }
@@ -169,6 +179,7 @@ class TemplateScanner
                 "application_folder" => "application",
                 'view_folder'        => strtolower($this->template_name),
                 'relative_location'  => 'application' . DIRECTORY_SEPARATOR . 'my_' . $this->template_name . '.php',
+                'helper_name'        => 'my_helper',
             );
 
             foreach ($valid_attributes as $valid_attribute => $default_value)

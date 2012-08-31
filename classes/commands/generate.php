@@ -84,7 +84,8 @@ class FIRE_Generate extends BaseCommand
             "application_folder" => $this->args['application_folder'],
             "parent_class"       => (isset($this->args['parent'])) ? $this->args['parent'] : $this->args['parent_controller'],
             "extra"              => $this->extra,
-            'relative_location'  => $relative_location
+            'relative_location'  => $relative_location,
+            'helper_name'        => strtolower($this->args['name']) . '_helper',
         );
 
         $template    = new TemplateScanner("controller", $args);
