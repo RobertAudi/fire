@@ -54,7 +54,7 @@ class Inferno
      * @var array
      */
     private static $valid_column_types = array('string', 'varchar', 'text', 'int', 'integer', 'decimal',
-                                                'date', 'datetime', 'char');
+                                                'date', 'datetime', 'char', 'bool', 'boolean');
 
     /**
      * List of valid subjects
@@ -380,6 +380,12 @@ class Inferno
                 break;
             case 'char':
                 $attributes['type'] = 'CHAR';
+                break;
+            case 'bool':
+            case 'boolean':
+                $attributes['type'] = 'TINYINT';
+                $attributes['unsigned'] = TRUE;
+                $attributes['null'] = FALSE;
                 break;
         }
 
