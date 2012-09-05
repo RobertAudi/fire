@@ -141,6 +141,20 @@ Finally, you can specify the `--parent` option along with the name of a
 class to change the parent model. You can also specify the
 `--parent-migration` option to chage the parent of the migration class.
 
+Here is list of valid field types that fire accepts:
+
+- `string`: translates to `VARCHAR(255) NOT NULL`
+- `varchar`: translates to `VARCHAR(255) NOT NULL`
+- `text`: translates to `TEXT`
+- `int`: translates to `INT(10) UNSIGNED NOT NULL`
+- `integer`: translates to `INT(10) UNSIGNED NOT NULL`
+- `decimal`: translates to `DECIMAL(10, 0) UNSIGNED NOT NULL`
+- `date`: translates to `DATE`
+- `datetime`: translates to `DATETIME`
+- `char`: translates to `CHAR`
+- `bool`: translates to `TINYINT(3) UNSIGNED NOT NULL`
+- `boolean`: translates to `TINYINT(3) UNSIGNED NOT NULL`
+
 ### Create a migration
 
     fire g migration add_author_to_posts author:string
