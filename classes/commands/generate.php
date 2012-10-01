@@ -126,10 +126,136 @@ class FIRE_Generate extends BaseCommand
         // Create the helper files.
         $this->helpers();
 
+        $this->assets();
+
         // Create the view files.
         $this->views();
 
         return;
+    }
+
+    /**
+     * The method that creates the assets folders
+     * if they don't already exist and generates the
+     * assets (again, if they don't already exist)
+     *
+     * @access private
+     * @return boolean
+     * @author Aziz Light
+     */
+    private function assets()
+    {
+        $relative_location = 'assets/';
+        $assets_directory = realpath($this->args['location'] . DIRECTORY_SEPARATOR . '..') . DIRECTORY_SEPARATOR . $relative_location;
+        if (!is_dir($assets_directory))
+        {
+            if (mkdir($assets_directory, 0755))
+            {
+                $message = "\tCreated folder: ";
+                if (php_uname("s") !== "Windows NT")
+                {
+                    $message = ApplicationHelpers::colorize($message, 'green') . $relative_location;
+                }
+                else
+                {
+                    $message .= $relative_location;
+                }
+            }
+        }
+        $assets_directories = array(
+            'css' => 'css' . DIRECTORY_SEPARATOR,
+            'img' => 'img' . DIRECTORY_SEPARATOR,
+            'js'  => 'js'  . DIRECTORY_SEPARATOR
+        );
+        foreach ($assets_directories as $asset_type => $asset_directory)
+        {
+            $ad = $assets_directory . $asset_directory;
+            if (!is_dir($ad) && mkdir($ad, 0755))
+            {
+                $message = "\tCreated folder: ";
+                if (php_uname("s") !== "Windows NT")
+                {
+                    $message = ApplicationHelpers::colorize($message, 'green') . $relative_location . $asset_directory;
+                }
+                else
+                {
+                    $message .= $relative_location . $asset_directory;
+                }
+            }
+
+            if (!empty($this->args['subdirectories']))
+            {
+                $ad .= $this->args['subdirectories'] . DIRECTORY_SEPARATOR;
+                if (!is_dir($assets_directory . $asset_directory . $this->args['subdirectories']) && mkdir($assets_directory . $asset_directory . $this->args['subdirectories'], 0755, TRUE))
+                {
+                    $message = "\tCreated folder: ";
+                    if (php_uname("s") !== "Windows NT")
+                    {
+                        $message = ApplicationHelpers::colorize($message, 'green') . $relative_location . $asset_directory . $this->args['subdirectories'];
+                    }
+                    else
+                    {
+                        $message .= $relative_location . $asset_directory . $this->args['subdirectories'];
+                    }
+                }
+            }
+
+            if (isset($message))
+            {
+                fwrite(STDOUT, $message . "\n");
+                unset($message);
+            }
+
+            if ($asset_type === 'img')
+            {
+                continue;
+            }
+            else
+            {
+                $ad .= $this->args['name'] . '.' . $asset_type;
+                if (!is_file($ad) && touch($ad))
+                {
+                    $message = "\tCreated asset: ";
+                    if (php_uname("s") !== "Windows NT")
+                    {
+                        $message = ApplicationHelpers::colorize($message, 'green') . $relative_location . $asset_directory;
+                        if (!empty($this->args['subdirectories']))
+                        {
+                            $message .= $this->args['subdirectories'] . DIRECTORY_SEPARATOR;
+                        }
+                        $message .= $this->args['name'] . '.' . $asset_type;
+                    }
+                    else
+                    {
+                        $message .= $relative_location . $asset_directory;
+                        if (!empty($this->args['subdirectories']))
+                        {
+                            $message .= $this->args['subdirectories'] . DIRECTORY_SEPARATOR;
+                        }
+                        $message .= $this->args['name'] . '.' . $asset_type;
+                    }
+                    
+                    fwrite(STDOUT, $message . "\n");
+                    unset($message);
+                }
+                else
+                {
+                    $message = "\tAsset already exists: " . $relative_location . $asset_directory;
+                    if (!empty($this->args['subdirectories']))
+                    {
+                        $message .= $this->args['subdirectories'] . DIRECTORY_SEPARATOR;
+                    }
+                    $message .= $this->args['name'] . '.' . $asset_type;
+                    
+                    fwrite(STDOUT, $message . "\n");
+                    unset($message);
+                }
+            }
+
+            unset($ad);
+        }
+        
+        return true;
     }
 
     /**
